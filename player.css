@@ -1,0 +1,412 @@
+[hidden] {
+  display: none !important;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  padding: 8px 12px 12px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #0e0e10;
+  color: #efeff1;
+  font: 14px system-ui, sans-serif;
+}
+
+header, #toolbar, #controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+#titlebar {
+  cursor: move;
+  user-select: none;
+  touch-action: none;
+}
+
+#status {
+  flex: 1;
+  margin: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+button, input, select {
+  padding: 6px 12px;
+  border: 1px solid #3a3a3d;
+  border-radius: 6px;
+  background: #18181b;
+  color: inherit;
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:hover, input:focus, select:focus {
+  border-color: #9147ff;
+  outline: none;
+}
+
+#resize {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  touch-action: none;
+  background: linear-gradient(135deg, transparent 50%, #53535f 50%, #53535f 60%, transparent 60%, transparent 70%, #53535f 70%, #53535f 80%, transparent 80%);
+}
+
+/* Broadcast list */
+
+#browse {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#controls {
+  gap: 6px;
+}
+
+#toolbar {
+  flex-wrap: wrap;
+}
+
+#channel-form {
+  display: flex;
+  gap: 8px;
+}
+
+#channel {
+  width: 190px;
+}
+
+#watched-row, #watched {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+#watched {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#watched li {
+  display: flex;
+}
+
+#watched li button:first-child {
+  border-radius: 6px 0 0 6px;
+}
+
+#watched li button:last-child {
+  padding: 6px 8px;
+  border-radius: 0 6px 6px 0;
+  border-left: none;
+}
+
+#search {
+  flex: 1;
+  min-width: 160px;
+}
+
+#view {
+  display: flex;
+}
+
+#view button:first-child {
+  border-radius: 6px 0 0 6px;
+}
+
+#view button:last-child {
+  border-radius: 0 6px 6px 0;
+  border-left: none;
+}
+
+#view button[aria-pressed="true"] {
+  background: #9147ff;
+  border-color: #9147ff;
+}
+
+#list {
+  flex: 1;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+#list.grid {
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+#list.rows {
+  gap: 6px;
+}
+
+#list button {
+  width: 100%;
+  padding: 0;
+  display: grid;
+  text-align: left;
+  overflow: hidden;
+}
+
+#list.grid button {
+  grid-template-columns: 1fr;
+  row-gap: 4px;
+  padding-bottom: 8px;
+}
+
+#list.rows button {
+  grid-template-columns: 128px 1fr auto;
+  align-items: center;
+  column-gap: 12px;
+  padding-right: 12px;
+}
+
+#list .thumb {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: #26262c;
+}
+
+#list.grid strong, #list.grid span {
+  padding: 0 8px;
+}
+
+#list strong {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+#list span {
+  color: #adadb8;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+#list span.live {
+  color: #ff4f4d;
+}
+
+/* Player and chat */
+
+#watch {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 8px;
+}
+
+.player {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  background: #000;
+}
+
+video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  cursor: pointer;
+}
+
+/* Control bar over the video, hidden after a few seconds of inactivity like Twitch's */
+
+#bar {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 28px 10px 6px;
+  background: linear-gradient(transparent, rgb(0 0 0 / 0.85));
+  transition: opacity 0.2s;
+}
+
+#stage.idle #bar {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#stage.idle video {
+  cursor: none;
+}
+
+#bar .row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+#bar .spacer {
+  flex: 1;
+}
+
+#bar button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+#bar button:hover {
+  background: rgb(255 255 255 / 0.15);
+}
+
+#bar svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+/* the sliders must not get the padding and border of the other inputs: they would stick out of the video */
+#bar input[type="range"] {
+  box-sizing: border-box;
+  padding: 0;
+  border: none;
+  background: transparent;
+  accent-color: #9147ff;
+}
+
+#seek {
+  display: block;
+  width: 100%;
+  margin: 0 0 4px;
+}
+
+#volume {
+  width: 80px;
+}
+
+#time {
+  margin-left: 8px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+#bar #go-live {
+  width: auto;
+  padding: 0 10px;
+  margin-left: 8px;
+  font-size: 13px;
+  color: #adadb8;
+}
+
+#bar #go-live::before {
+  content: "● ";
+}
+
+#bar #go-live.at-live {
+  color: #ff4f4d;
+}
+
+#bar #quality {
+  width: auto;
+  padding: 0 10px;
+  gap: 6px;
+  grid-auto-flow: column;
+  font-size: 13px;
+}
+
+.menu-wrap {
+  position: relative;
+}
+
+#quality-menu {
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  margin: 0 0 6px;
+  padding: 4px;
+  min-width: 170px;
+  list-style: none;
+  background: #18181b;
+  border: 1px solid #3a3a3d;
+  border-radius: 6px;
+}
+
+#bar #quality-menu button {
+  display: block;
+  width: 100%;
+  height: auto;
+  padding: 7px 10px;
+  text-align: left;
+  font-size: 13px;
+}
+
+#quality-menu button[aria-checked="true"]::after {
+  content: " ✓";
+  color: #bf94ff;
+}
+
+#chat {
+  margin: 0;
+  padding: 8px;
+  overflow-y: auto;
+  list-style: none;
+  background: #18181b;
+  border-radius: 6px;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+}
+
+#chat li {
+  padding: 2px 0;
+}
+
+#chat time {
+  margin-right: 6px;
+  color: #adadb8;
+  font-size: 12px;
+}
+
+#chat .emote {
+  height: 28px;
+  margin: -6px 1px;
+  vertical-align: middle;
+}
+
+#chat li.hint {
+  color: #adadb8;
+}
+
+@media (max-width: 760px) {
+  #watch {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 160px;
+  }
+}

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>Twitch Rewind</title>
+  <link rel="stylesheet" href="player.css">
+  <script src="vendor/hls.min.js"></script>
+  <script type="module" src="player.js"></script>
+</head>
+<body>
+  <header id="titlebar" title="Перетащите, чтобы переместить окно">
+    <button id="back" hidden>← К списку</button>
+    <p id="status" role="status"></p>
+    <button id="close" aria-label="Закрыть">✕</button>
+  </header>
+
+  <section id="browse">
+    <div id="toolbar">
+      <form id="channel-form">
+        <input id="channel" list="channel-suggestions" placeholder="Ник или ссылка на канал" aria-label="Канал" autocomplete="off" spellcheck="false">
+        <datalist id="channel-suggestions"></datalist>
+        <button title="Открыть канал и сохранять его эфиры, пока они идут">Отслеживать</button>
+      </form>
+      <input id="search" type="search" placeholder="Поиск по названию" aria-label="Поиск по названию">
+      <select id="period" aria-label="Период">
+        <option value="">За всё время</option>
+        <option value="1">За сутки</option>
+        <option value="7">За 7 дней</option>
+        <option value="30">За 30 дней</option>
+        <option value="90">За 3 месяца</option>
+      </select>
+      <select id="sort" aria-label="Сортировка">
+        <option value="new">Сначала новые</option>
+        <option value="old">Сначала старые</option>
+        <option value="long">Сначала длинные</option>
+      </select>
+      <div id="view" role="group" aria-label="Вид">
+        <button data-view="grid">Плитки</button>
+        <button data-view="rows">Список</button>
+      </div>
+    </div>
+    <div id="watched-row" hidden>
+      <button id="page-channel" title="Вернуться к каналу этой страницы" hidden></button>
+      <span id="watched-label">Отслеживаются:</span>
+      <ul id="watched"></ul>
+    </div>
+    <ul id="list"></ul>
+  </section>
+
+  <main id="watch" hidden>
+    <div class="player">
+      <div id="stage">
+        <video id="video" playsinline></video>
+        <div id="bar">
+          <input id="seek" type="range" min="0" max="0" step="1" value="0" aria-label="Перемотка">
+          <div class="row">
+            <button id="play" aria-label="Играть"></button>
+            <button id="mute" aria-label="Звук"></button>
+            <input id="volume" type="range" min="0" max="1" step="0.05" aria-label="Громкость">
+            <button id="go-live" hidden></button>
+            <span id="time"></span>
+            <span class="spacer"></span>
+            <div class="menu-wrap" id="quality-wrap" hidden>
+              <button id="quality" aria-haspopup="true" aria-label="Качество"></button>
+              <ul id="quality-menu" hidden></ul>
+            </div>
+            <button id="fullscreen" aria-label="На весь экран"></button>
+          </div>
+        </div>
+      </div>
+      <div id="controls">
+        <button data-seek="-300">−5 мин</button>
+        <button data-seek="-30">−30 с</button>
+        <button data-seek="30">+30 с</button>
+      </div>
+    </div>
+    <ol id="chat" aria-label="Чат"></ol>
+  </main>
+
+  <div id="resize" title="Потяните, чтобы изменить размер окна"></div>
+</body>
+</html>

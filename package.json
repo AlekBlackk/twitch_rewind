@@ -1,0 +1,8 @@
+{
+  "name": "twitch-rewind",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Twitch Rewind",
+  "version": "0.10.0",
+  "description": "Rewind live Twitch streams via the DVR playlist, even when the VOD is not published.",
+  "action": { "default_title": "Twitch Rewind: перемотка эфира" },
+  "background": { "service_worker": "background.js", "type": "module" },
+  "permissions": ["activeTab", "scripting", "storage", "alarms"],
+  "host_permissions": [
+    "https://gql.twitch.tv/*",
+    "https://*.cloudfront.net/*",
+    "https://recent-messages.robotty.de/*",
+    "https://7tv.io/*",
+    "https://api.betterttv.net/*"
+  ],
+  "web_accessible_resources": [
+    { "resources": ["player.html"], "matches": ["https://www.twitch.tv/*"] }
+  ]
+}
