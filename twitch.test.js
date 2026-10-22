@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { discoverServers, dvrPath, parseLogin, parsePreviewUrl, searchChannels } from "./twitch.js";
+import { discoverServers, dvrPath, getPastStreams, parseLogin, parsePreviewUrl, searchChannels } from "./twitch.js";
 import { parseIrcMessage } from "./chat.js";
 import { twitchEmoteUrl } from "./emotes.js";
 
@@ -35,6 +35,21 @@ test("discoverServers lists each server of the live streams' previews once", asy
   ];
   t.mock.method(globalThis, "fetch", async () => ({ ok: true, json: async () => ({ data: { streams: { edges } } }) }));
   assert.deepEqual(await discoverServers(), ["dnewserver12345", "dother1234567"]);
+});
+
+test("getPastStreams reads sullygnome's table and drops streams older than 60 days", async (t) => {
+  const recent = new Date(Date.now() - 5 * 86400000).toISOString();
+  const rows = [
+    { streamId: 318801965925, startDateTime: recent, length: 327 },
+    { streamId: 1, startDateTime: new Date(Date.now() - 90 * 86400000).toISOString(), length: 10 },
+  ];
+  const fetched = t.mock.method(globalThis, "fetch", async (url) => url.endsWith("/streams")
+    ? { text: async () => `var PageInfo = {"a":1,"id":26943720}` }
+    : { ok: true, json: async () => ({ data: rows }) });
+  assert.deepEqual(await getPastStreams("enzzai"), [
+    { streamId: "318801965925", startedAt: Date.parse(recent), duration: 327 * 60 },
+  ]);
+  assert.match(fetched.mock.calls[1].arguments[0], /\/streams\/90\/26943720\//);
 });
 
 test("parseLogin accepts names and channel URLs, rejects junk", () => {

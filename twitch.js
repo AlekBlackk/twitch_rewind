@@ -114,6 +114,26 @@ export async function getBroadcasts(login) {
   return { channelId: user.id, broadcasts };
 }
 
+/**
+ * The channel's broadcasts of the last 60 days, newest first, as the stats site sullygnome knows them.
+ * Twitch lists only broadcasts with a VOD, but the DVR of a deleted one may still be on the CDN;
+ * sullygnome gives the stream id and start time its playlist path is built from (older ones are gone).
+ * shortcut: a start time rounded to the minute (rare) builds a wrong path, so that playlist is not found;
+ * the Twitch VOD Downloader tries all 60 seconds, do the same if it matters.
+ */
+export async function getPastStreams(login) {
+  const page = await fetch(`https://sullygnome.com/channel/${login}/streams`).then((r) => r.text());
+  const channelId = /(?<=PageInfo.{1,1000}?"id":)\d+/.exec(page)?.[0];
+  if (!channelId) throw new Error("sullygnome не знает этот канал");
+  const res = await fetch(`https://sullygnome.com/api/tables/channeltables/streams/90/${channelId}/%20/1/1/desc/0/100`);
+  if (!res.ok) throw new Error(`sullygnome ответил ${res.status}`);
+  const { data } = await res.json();
+  const since = Date.now() - 60 * 86400000;
+  return data
+    .map((row) => ({ streamId: String(row.streamId), startedAt: Date.parse(row.startDateTime), duration: Math.max(0, row.length) * 60 }))
+    .filter((stream) => stream.startedAt >= since);
+}
+
 /** Channels matching the typed text, best match first: the suggestions of the name field. */
 export async function searchChannels(text) {
   const { searchUsers } = await gql(
@@ -156,7 +176,7 @@ export async function findLivePlaylist(login, { streamId, startedAt, knownServer
     return playlist.includes("#EXTINF") ? url : null;
   }));
   const url = found.find(Boolean);
-  if (!url) throw new Error("Twitch не пишет DVR для этого эфира — перемотка недоступна");
+  if (!url) throw new Error("Запись этого эфира не найдена — перемотка недоступна");
   return url;
 }
 

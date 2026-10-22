@@ -30,6 +30,11 @@ The watched channels are listed under the toolbar: click a name to open the chan
 (broadcasts already saved stay in the list). While another channel is open, "← name" returns to the channel of the
 Twitch page (it is shown without being watched).
 
+Broadcasts whose VOD was deleted: the list also has the channel's last 60 days of streams from sullygnome.com
+(a stats site; it knows each stream's id and start time). Such a broadcast is titled "Эфир без записи"; its
+playlist is searched for on Twitch's CDN when it is opened, and is found only while Twitch has not deleted it.
+Without a VOD there is no chat.
+
 Chat messages show their send time (hover it for the time since the broadcast start) and emotes:
 Twitch's own, plus 7TV, BTTV and FFZ (global and the channel's), loaded when the window opens.
 

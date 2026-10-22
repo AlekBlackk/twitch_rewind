@@ -1,4 +1,4 @@
-import { findLivePlaylist, getBroadcasts, parseLogin, searchChannels } from "./twitch.js";
+import { findLivePlaylist, getBroadcasts, getPastStreams, parseLogin, searchChannels } from "./twitch.js";
 import { createLiveChat, createVodChat, noChat } from "./chat.js";
 import { getSavedBroadcasts, getWatchedChannels, unwatchChannel, watchChannel } from "./saved.js";
 import { loadEmotes } from "./emotes.js";
@@ -156,8 +156,19 @@ async function showList() {
     const channel = await getBroadcasts(requested);
     const listed = new Set(channel.broadcasts.map((b) => b.streamId));
     const saved = await getSavedBroadcasts(requested, listed);
+    // sullygnome being down only means fewer broadcasts in the list
+    const past = await getPastStreams(requested).catch(() => []);
     if (login !== requested) return; // another channel was typed in meanwhile
-    broadcasts = [...channel.broadcasts, ...saved];
+    const have = new Set([...listed, ...saved.map((b) => b.streamId)]);
+    const knownServers = channel.broadcasts.map((b) => b.server).filter(Boolean);
+    broadcasts = [
+      ...channel.broadcasts,
+      ...saved,
+      // the playlist of these is searched for when one is opened (see open)
+      ...past.filter((s) => !have.has(s.streamId)).map((s) => ({
+        ...s, videoId: null, title: "Эфир без записи", thumbnail: null, live: false, knownServers,
+      })),
+    ];
     // Only a channel typed in by hand is looked after: the background worker saves its live broadcasts.
     // Opening a channel from the Twitch page just shows the list.
     if (trackLogin) watchChannel(requested).then(renderWatched);
@@ -259,7 +270,7 @@ async function open(broadcast) {
     status.textContent = broadcast.title;
     play(qualities);
     if (broadcast.videoId) chat = createVodChat(broadcast.videoId, renderChat);
-    else if (broadcast.saved) chat = noChat;
+    else if (!broadcast.live) chat = noChat;
     else chat = createLiveChat(login, broadcast.startedAt, renderChat);
   } catch (error) {
     status.textContent = error.message;

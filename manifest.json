@@ -9,6 +9,7 @@
   "host_permissions": [
     "https://gql.twitch.tv/*",
     "https://*.cloudfront.net/*",
+    "https://sullygnome.com/*",
     "https://recent-messages.robotty.de/*",
     "https://7tv.io/*",
     "https://api.betterttv.net/*"
