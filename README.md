@@ -9,7 +9,8 @@ is not published. It plays the DVR playlist Twitch writes on its CDN during the 
 1. Open `chrome://extensions`, turn on **Developer mode**.
 2. **Load unpacked** → pick this folder.
 3. Open a channel on twitch.tv and click the extension icon: a window with the channel's broadcasts opens
-   over the page. Pick one to watch it with chat. Click the icon again or ✕ to close the window.
+   over the page. Pick one to watch it with chat. Click the icon again or ✕ to close the window; — folds it
+   down to its title bar (playback goes on).
    The player has Twitch-style controls: play, volume, seek bar, "В эфир" for a live broadcast, quality
    menu ("Авто" or a fixed quality, remembered) and fullscreen. Keys: ← → seek by 10 seconds, Space or K
    play/pause, M mute, F fullscreen.

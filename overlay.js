@@ -1,5 +1,5 @@
 // Injected into the Twitch tab on each icon click: toggles the player window over the page.
-// The window's title bar and resize grip live inside the iframe; it sends move/resize/close
+// The window's title bar and resize grip live inside the iframe; it sends move/resize/minimize/close
 // messages here. Wrapped in a block so re-injection does not redeclare top-level names.
 {
   const existing = document.getElementById("twitch-rewind");
@@ -20,9 +20,11 @@
     };
     bounds.left = (innerWidth - bounds.width) / 2;
     bounds.top = 60;
+    let collapsedHeight = null; // height of the bare title bar while minimized; `bounds.height` is kept for restoring
 
     const applyBounds = () => {
-      for (const key of ["left", "top", "width", "height"]) frame.style[key] = `${bounds[key]}px`;
+      for (const key of ["left", "top", "width"]) frame.style[key] = `${bounds[key]}px`;
+      frame.style.height = `${collapsedHeight ?? bounds.height}px`;
     };
     Object.assign(frame.style, {
       position: "fixed",
@@ -47,6 +49,8 @@
       } else if (data.action === "resize") {
         bounds.width = Math.max(MIN_WIDTH, bounds.width + data.dx);
         bounds.height = Math.max(MIN_HEIGHT, bounds.height + data.dy);
+      } else if (data.action === "minimize") {
+        collapsedHeight = data.height; // null restores
       }
       applyBounds();
     });

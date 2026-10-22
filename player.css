@@ -30,6 +30,16 @@ header, #toolbar, #controls {
   touch-action: none;
 }
 
+body.minimized {
+  height: auto;
+  padding-bottom: 8px;
+  overflow: hidden; /* a fractional title bar height would otherwise show a scrollbar */
+}
+
+body.minimized > :not(#titlebar) {
+  display: none;
+}
+
 #status {
   flex: 1;
   margin: 0;

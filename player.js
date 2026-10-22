@@ -132,6 +132,14 @@ dragToOverlay($("titlebar"), "move");
 dragToOverlay($("resize"), "resize");
 $("close").addEventListener("click", () => toOverlay({ action: "close" }));
 
+// Minimized, only the title bar stays; the overlay shrinks the iframe to the height measured here.
+$("minimize").addEventListener("click", () => {
+  const minimized = document.body.classList.toggle("minimized");
+  $("minimize").textContent = minimized ? "▢" : "—";
+  $("minimize").title = $("minimize").ariaLabel = minimized ? "Развернуть" : "Свернуть";
+  toOverlay({ action: "minimize", height: minimized ? Math.ceil(document.body.getBoundingClientRect().height) : null });
+});
+
 // ---- Broadcast list
 
 async function showList() {
