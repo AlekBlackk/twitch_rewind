@@ -5,7 +5,7 @@
 **Перематывайте живой стрим Twitch к началу, даже если запись (VOD) не опубликована.**
 
 ![Chrome](https://img.shields.io/badge/Chrome-Manifest%20V3-4285F4?logo=googlechrome&logoColor=white)
-![Version](https://img.shields.io/badge/version-0.10.0-9146FF)
+![Version](https://img.shields.io/badge/version-1.0.0-9146FF)
 ![Dependencies](https://img.shields.io/badge/runtime%20deps-hls.js%20only-brightgreen)
 
 </div>
