@@ -3,7 +3,11 @@
   "name": "Twitch Rewind",
   "version": "0.10.0",
   "description": "Rewind live Twitch streams via the DVR playlist, even when the VOD is not published.",
-  "action": { "default_title": "Twitch Rewind: перемотка эфира" },
+  "icons": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
+  "action": {
+    "default_title": "Twitch Rewind: перемотка эфира",
+    "default_icon": { "16": "icons/icon16.png", "32": "icons/icon32.png" }
+  },
   "background": { "service_worker": "background.js", "type": "module" },
   "permissions": ["activeTab", "scripting", "storage", "alarms", "downloads"],
   "host_permissions": [
