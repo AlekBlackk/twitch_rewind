@@ -5,7 +5,7 @@
   "description": "Rewind live Twitch streams via the DVR playlist, even when the VOD is not published.",
   "action": { "default_title": "Twitch Rewind: перемотка эфира" },
   "background": { "service_worker": "background.js", "type": "module" },
-  "permissions": ["activeTab", "scripting", "storage", "alarms"],
+  "permissions": ["activeTab", "scripting", "storage", "alarms", "downloads"],
   "host_permissions": [
     "https://gql.twitch.tv/*",
     "https://*.cloudfront.net/*",

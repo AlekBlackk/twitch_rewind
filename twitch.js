@@ -29,6 +29,8 @@ const CHANNEL_QUERY = `query($login: String!) {
   }
 }`;
 
+const PAST_STREAMS_TIMEOUT_MS = 20000;
+
 const COMMENTS_QUERY = `query($id: ID!, $offset: Int!) {
   video(id: $id) { comments(contentOffsetSeconds: $offset) { edges { node {
     id createdAt contentOffsetSeconds commenter { displayName }
@@ -53,10 +55,17 @@ async function gql(query, variables, retry = true) {
   return data;
 }
 
+// First path parts of twitch.tv pages that are not channels (no user can have these names).
+const NOT_CHANNELS = new Set([
+  "directory", "videos", "settings", "search", "downloads", "subscriptions", "wallet", "friends", "inventory",
+  "drops", "turbo", "prime", "jobs", "store", "team", "p", "u", "popout", "embed", "moderator", "dashboard",
+  "following", "messages", "payments", "bits", "login", "signup",
+]);
+
 // Accepts "name", "twitch.tv/name" or a full channel URL.
 export function parseLogin(input) {
   const login = input.trim().toLowerCase().replace(/^.*twitch\.tv\//, "").split(/[/?#]/)[0];
-  return /^[a-z0-9_]{1,25}$/.test(login) ? login : null;
+  return /^[a-z0-9_]{1,25}$/.test(login) && !NOT_CHANNELS.has(login) ? login : null;
 }
 
 export async function dvrPath(login, streamId, startedAt) {
@@ -122,10 +131,12 @@ export async function getBroadcasts(login) {
  * the Twitch VOD Downloader tries all 60 seconds, do the same if it matters.
  */
 export async function getPastStreams(login) {
-  const page = await fetch(`https://sullygnome.com/channel/${login}/streams`).then((r) => r.text());
+  // the site sometimes does not answer at all: give up instead of waiting forever
+  const signal = AbortSignal.timeout(PAST_STREAMS_TIMEOUT_MS);
+  const page = await fetch(`https://sullygnome.com/channel/${login}/streams`, { signal }).then((r) => r.text());
   const channelId = /(?<=PageInfo.{1,1000}?"id":)\d+/.exec(page)?.[0];
   if (!channelId) throw new Error("sullygnome не знает этот канал");
-  const res = await fetch(`https://sullygnome.com/api/tables/channeltables/streams/90/${channelId}/%20/1/1/desc/0/100`);
+  const res = await fetch(`https://sullygnome.com/api/tables/channeltables/streams/90/${channelId}/%20/1/1/desc/0/100`, { signal });
   if (!res.ok) throw new Error(`sullygnome ответил ${res.status}`);
   const { data } = await res.json();
   const since = Date.now() - 60 * 86400000;

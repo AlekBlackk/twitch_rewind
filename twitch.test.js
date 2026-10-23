@@ -57,6 +57,7 @@ test("parseLogin accepts names and channel URLs, rejects junk", () => {
   assert.equal(parseLogin("https://www.twitch.tv/arthurperti?sr=a"), "arthurperti");
   assert.equal(parseLogin('x"){ evil }'), null);
   assert.equal(parseLogin(""), null);
+  assert.equal(parseLogin("https://www.twitch.tv/directory/category/dota-2"), null); // a page, not a channel
 });
 
 test("parseIrcMessage reads a tagged PRIVMSG and ignores the rest", () => {

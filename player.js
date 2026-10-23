@@ -4,6 +4,8 @@ import { getSavedBroadcasts, getWatchedChannels, unwatchChannel, watchChannel } 
 import { loadEmotes } from "./emotes.js";
 import { buildMasterPlaylist, findQualities, SOURCE } from "./quality.js";
 import { ICONS } from "./icons.js";
+import { openClipEditor } from "./clip-editor.js";
+import { MIN_CLIP_SECONDS, storedUrl } from "./clip.js";
 
 const $ = (id) => document.getElementById(id);
 const [status, browse, list, watch, back, video, chatList, search, period, sort] =
@@ -19,6 +21,7 @@ let trackLogin = false; // whether `login` is looked after: set by typing a name
 let broadcasts = [];
 let hls = null;
 let masterUrl = null; // blob URL of the master playlist built for the current broadcast
+let sourceUrl = null; // what hls.js loads: that master playlist, or the only quality's playlist
 let activeLevel = -1; // quality level being played
 let chat = null;
 let current = null;
@@ -283,8 +286,7 @@ function play(qualities) {
     ? URL.createObjectURL(new Blob([buildMasterPlaylist(qualities)], { type: "application/vnd.apple.mpegurl" }))
     : null;
   hls = new Hls({
-    // Finished VODs list muted parts as "N-unmuted.ts" while the file is stored as "N-muted.ts".
-    xhrSetup: (xhr, fragUrl) => xhr.open("GET", fragUrl.replace("-unmuted.", "-muted.")),
+    xhrSetup: (xhr, fragUrl) => xhr.open("GET", storedUrl(fragUrl)),
   });
   // A live DVR playlist is an EVENT playlist without ENDLIST: hls.js starts at the live edge,
   // keeps reloading it, and the whole broadcast from its start stays seekable.
@@ -296,13 +298,15 @@ function play(qualities) {
     activeLevel = level;
     renderQuality();
   });
-  hls.loadSource(masterUrl ?? qualities[0].url);
+  sourceUrl = masterUrl ?? qualities[0].url;
+  hls.loadSource(sourceUrl);
   hls.attachMedia(video);
   video.play().catch(() => {}); // autoplay may be blocked: then the user presses play
 }
 
 function stop() {
   current = null;
+  $("clip-dialog").close();
   hls?.destroy();
   hls = null;
   if (masterUrl) URL.revokeObjectURL(masterUrl);
@@ -362,7 +366,7 @@ document.addEventListener("keydown", (event) => {
   const action = shortcuts[event.key];
   const typing = event.target.matches("input:not([type=range]), select");
   const onButton = event.key === " " && event.target.closest("button"); // the space bar presses the button
-  if (!action || typing || onButton || watch.hidden || event.altKey || event.ctrlKey || event.metaKey) return;
+  if (!action || typing || onButton || watch.hidden || $("clip-dialog").open || event.altKey || event.ctrlKey || event.metaKey) return;
   event.preventDefault();
   event.stopPropagation();
   action();
@@ -500,6 +504,17 @@ qualityMenu.addEventListener("click", (event) => {
 });
 document.addEventListener("click", (event) => {
   if (!event.target.closest(".menu-wrap")) qualityMenu.hidden = true;
+});
+
+// ---- Clip: the editor opens on the last seconds up to the current position (see clip-editor.js)
+
+const clipButton = $("clip");
+setIcon(clipButton, "clip");
+clipButton.addEventListener("click", () => {
+  const fragments = hls?.levels[activeLevel]?.details?.fragments;
+  if (!fragments?.length || seekableEnd() < MIN_CLIP_SECONDS) return; // nothing to clip yet
+  video.pause();
+  openClipEditor({ sourceUrl, fragments, anchor: video.currentTime, end: seekableEnd(), volume: video.volume, muted: video.muted });
 });
 
 function renderChat() {

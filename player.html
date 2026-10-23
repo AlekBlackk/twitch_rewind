@@ -5,6 +5,7 @@
   <title>Twitch Rewind</title>
   <link rel="stylesheet" href="player.css">
   <script src="vendor/hls.min.js"></script>
+  <script src="vendor/mux.min.js"></script>
   <script type="module" src="player.js"></script>
 </head>
 <body>
@@ -61,6 +62,7 @@
             <button id="go-live" hidden></button>
             <span id="time"></span>
             <span class="spacer"></span>
+            <button id="clip" aria-label="Создать клип" title="Создать клип"></button>
             <div class="menu-wrap" id="quality-wrap" hidden>
               <button id="quality" aria-haspopup="true" aria-label="Качество"></button>
               <ul id="quality-menu" hidden></ul>
@@ -77,6 +79,34 @@
     </div>
     <ol id="chat" aria-label="Чат"></ol>
   </main>
+
+  <dialog id="clip-dialog" aria-labelledby="clip-heading">
+    <form id="clip-form">
+      <header>
+        <h2 id="clip-heading">Создать клип</h2>
+        <button type="button" id="clip-close" aria-label="Закрыть">✕</button>
+      </header>
+      <video id="clip-video" playsinline></video>
+      <div id="clip-range">
+        <div id="clip-selection">
+          <button type="button" id="clip-from" class="handle" aria-label="Начало клипа"></button>
+          <button type="button" id="clip-to" class="handle" aria-label="Конец клипа"></button>
+          <div id="clip-playhead"></div>
+        </div>
+      </div>
+      <div id="clip-controls">
+        <button type="button" id="clip-play"></button>
+        <button type="button" id="clip-mute"></button>
+        <p id="clip-times"></p>
+      </div>
+      <input id="clip-title" required placeholder="Название клипа (обязательно)" aria-label="Название клипа" autocomplete="off">
+      <p id="clip-message" role="status"></p>
+      <footer>
+        <button type="button" id="clip-cancel">Отмена</button>
+        <button id="clip-save">Сохранить клип</button>
+      </footer>
+    </form>
+  </dialog>
 
   <div id="resize" title="Потяните, чтобы изменить размер окна"></div>
 </body>
