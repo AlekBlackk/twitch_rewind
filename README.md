@@ -1,49 +1,119 @@
-# Twitch Rewind
+<div align="center">
 
-Chrome extension (MV3) for rewinding a live Twitch stream back to its start, even when the VOD
-is not published. It plays the DVR playlist Twitch writes on its CDN during the broadcast
-(see `twitch.js` for how the URL is built). If Twitch writes no DVR for a stream, rewind is not available.
+# ⏪ Twitch Rewind
 
-## Install
+**Перематывайте живой стрим Twitch к началу, даже если запись (VOD) не опубликована.**
 
-1. Open `chrome://extensions`, turn on **Developer mode**.
-2. **Load unpacked** → pick this folder.
-3. Open a channel on twitch.tv and click the extension icon: a window with the channel's broadcasts opens
-   over the page. Pick one to watch it with chat. Click the icon again or ✕ to close the window; — folds it
-   down to its title bar (playback goes on).
-   The player has Twitch-style controls: play, volume, seek bar, "В эфир" for a live broadcast, quality
-   menu ("Авто" or a fixed quality, remembered) and fullscreen. Keys: ← → seek by 10 seconds, Space or K
-   play/pause, M mute, F fullscreen.
-   Another channel is opened by typing its name or link into the field at the top of the list;
-   matching channels are suggested while typing (Twitch's channel search).
-   Drag the title bar to move the window, the bottom-right corner to resize it. The list can be shown
-   as tiles or rows, searched by title, filtered by period and sorted.
+![Chrome](https://img.shields.io/badge/Chrome-Manifest%20V3-4285F4?logo=googlechrome&logoColor=white)
+![Version](https://img.shields.io/badge/version-0.10.0-9146FF)
+![Dependencies](https://img.shields.io/badge/runtime%20deps-hls.js%20only-brightgreen)
 
-Broadcasts without a VOD: Twitch has no link to such a stream's DVR once it ends, and its start time cannot be
-recovered afterwards. So every channel whose name was typed into the field of the window and sent with "Отслеживать" (not the one opened
-from the page) is checked every 5 minutes (while Chrome runs), and
-the playlist URL of a live broadcast is saved in `chrome.storage.local` (~300 bytes, no video). After the stream
-ends it stays in the list as "сохранён расширением" for as long as Twitch keeps the DVR on its CDN (2+ hours
-confirmed, longer not measured); a deleted one disappears from the list. A broadcast that was not seen live
-while Chrome was open cannot be saved. Saved broadcasts have no chat.
-The watched channels are listed under the toolbar: click a name to open the channel, ✕ stops looking after it
-(broadcasts already saved stay in the list). While another channel is open, "← name" returns to the channel of the
-Twitch page (it is shown without being watched).
+</div>
 
-Broadcasts whose VOD was deleted: the list also has the channel's last 60 days of streams from sullygnome.com
-(a stats site; it knows each stream's id and start time). Such a broadcast is titled "Эфир без записи"; its
-playlist is searched for on Twitch's CDN when it is opened, and is found only while Twitch has not deleted it.
-Without a VOD there is no chat.
+Twitch Rewind проигрывает DVR-плейлист, который Twitch записывает на свой CDN во время трансляции
+(как строится ссылка, см. [`twitch.js`](twitch.js)). Откройте канал, нажмите на иконку расширения, и поверх
+страницы появится окно плеера со списком эфиров канала, чатом и эмодзи.
 
-Chat messages show their send time (hover it for the time since the broadcast start) and emotes:
-Twitch's own, plus 7TV, BTTV and FFZ (global and the channel's), loaded when the window opens.
+> [!NOTE]
+> Если Twitch не ведёт DVR для стрима, перемотка для него недоступна.
 
-Chat: broadcasts with a VOD (also while it is recording) get the full chat replay. Twitch keeps no chat
-history for a live broadcast without a VOD: it gets the channel's last ~800 messages from
-recent-messages.robotty.de (a third-party service) plus everything sent after the window was opened.
+## ✨ Возможности
 
-## Test
+- **Перемотка живого стрима** к самому началу через DVR-плейлист, опубликованная запись не нужна.
+- **Плеер в стиле Twitch**: пауза, громкость, полоса перемотки, «В эфир» (вернуться к прямой трансляции),
+  меню качества («Авто» или фиксированное, выбор запоминается) и полноэкранный режим.
+- **Повтор чата** рядом с видео: время отправки сообщений и эмодзи Twitch, 7TV, BTTV и FFZ
+  (глобальные и канала).
+- **Список эфиров** плитками или строками, с поиском по названию, фильтром по периоду и сортировкой.
+- **Любой канал**: введите имя или ссылку, подсказки подгружаются из поиска каналов Twitch по мере набора.
+- **Отслеживаемые каналы**: плейлисты живых эфиров сохраняются в фоне, и стрим можно перематывать
+  после его окончания.
+- **Прошлые эфиры** с удалённой записью берутся с [sullygnome.com](https://sullygnome.com).
+- **Подвижное окно**: перетаскивайте за заголовок, меняйте размер за правый нижний угол, сворачивайте
+  до заголовка, воспроизведение при этом продолжается.
 
-```
+## 🚀 Установка
+
+1. Скачайте или клонируйте репозиторий.
+2. Откройте `chrome://extensions` и включите **Режим разработчика**.
+3. Нажмите **Загрузить распакованное расширение** и выберите папку проекта.
+4. Откройте канал на [twitch.tv](https://www.twitch.tv) и нажмите на иконку расширения.
+
+Иконка ещё раз или ✕ закрывают окно, **—** сворачивает его до заголовка.
+
+## ⌨️ Горячие клавиши
+
+| Клавиша | Действие |
+| --- | --- |
+| <kbd>←</kbd> / <kbd>→</kbd> | Перемотка на 10 секунд назад / вперёд |
+| <kbd>Space</kbd> или <kbd>K</kbd> | Пауза / воспроизведение |
+| <kbd>M</kbd> | Выключить звук |
+| <kbd>F</kbd> | Полный экран |
+
+## 📼 Эфиры без записи
+
+После окончания эфира у Twitch нет ссылки на его DVR, а время начала потом не восстановить.
+Расширение обходит это двумя способами.
+
+**Отслеживание канала.** Каждый канал, который вы ввели в поле окна и отправили кнопкой «Отслеживать»
+(не тот, что открыт на странице), проверяется раз в 5 минут, пока запущен Chrome. Ссылка на плейлист живого
+эфира сохраняется в `chrome.storage.local` (около 300 байт, видео не хранится). После окончания стрима он
+остаётся в списке с пометкой «сохранён расширением», пока Twitch держит DVR на своём CDN: подтверждено
+2+ часа, дольше не измерялось. Удалённый эфир пропадает из списка.
+
+- Эфир, который не видели в прямом эфире при открытом Chrome, сохранить нельзя.
+- У сохранённых эфиров нет чата.
+- Отслеживаемые каналы перечислены под панелью: клик по имени открывает канал, ✕ прекращает отслеживание
+  (уже сохранённые эфиры остаются в списке). Пока открыт другой канал, «← имя» возвращает к каналу со
+  страницы Twitch, он показывается без отслеживания.
+
+**Удалённые записи.** В список также попадают эфиры канала за последние 60 дней с sullygnome.com, где
+известны id и время начала каждого стрима. Такой эфир называется «Эфир без записи». Его плейлист ищется на
+CDN Twitch при открытии и находится, только пока Twitch его не удалил. Чата нет.
+
+## 💬 Чат
+
+| Эфир | Чат |
+| --- | --- |
+| Есть запись (в том числе пока она идёт) | Полный повтор чата |
+| Прямой эфир без записи | Последние ~800 сообщений канала с [recent-messages.robotty.de](https://recent-messages.robotty.de) (сторонний сервис) и всё, что отправлено после открытия окна |
+| Сохранён расширением или записи нет совсем | Чата нет |
+
+Наведите курсор на время сообщения, чтобы увидеть время от начала эфира. Эмодзи загружаются при открытии окна.
+
+## 🔒 Разрешения
+
+| Разрешение | Зачем |
+| --- | --- |
+| `activeTab`, `scripting` | Вставить окно плеера во вкладку Twitch по клику на иконку |
+| `storage` | Хранить отслеживаемые каналы, сохранённые плейлисты и выбранное качество |
+| `alarms` | Проверять отслеживаемые каналы раз в 5 минут |
+| `gql.twitch.tv`, `*.cloudfront.net` | API Twitch и CDN, на котором лежат DVR-плейлисты |
+| `sullygnome.com` | Список прошлых эфиров |
+| `recent-messages.robotty.de` | История чата для живых эфиров без записи |
+| `7tv.io`, `api.betterttv.net` | Сторонние эмодзи |
+
+## 🧪 Разработка
+
+Сборки нет: расширение работает прямо из исходников. Тесты запускаются встроенным раннером Node.
+
+```bash
 npm test
 ```
+
+| Файл | Назначение |
+| --- | --- |
+| [`background.js`](background.js) | Service worker: клик по иконке и опрос раз в 5 минут |
+| [`saved.js`](saved.js) | Сохранение плейлистов отслеживаемых каналов |
+| [`twitch.js`](twitch.js) | Запросы к Twitch и ссылки на DVR-плейлисты |
+| [`quality.js`](quality.js) | Разбор качества и мастер-плейлист |
+| [`overlay.js`](overlay.js) | Окно, вставляемое поверх страницы Twitch |
+| [`player.html`](player.html), [`player.js`](player.js), [`player.css`](player.css) | Плеер и список эфиров |
+| [`chat.js`](chat.js), [`emotes.js`](emotes.js) | Повтор чата и загрузка эмодзи |
+
+## 🙏 Благодарности
+
+Воспроизведение построено на [hls.js](https://github.com/video-dev/hls.js). Эмодзи берутся из Twitch,
+[7TV](https://7tv.app), [BetterTTV](https://betterttv.net) и [FrankerFaceZ](https://www.frankerfacez.com).
+
+Twitch Rewind — неофициальный проект и не связан с Twitch Interactive, Inc.
