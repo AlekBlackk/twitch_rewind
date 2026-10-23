@@ -21,7 +21,10 @@
       <form id="channel-form">
         <input id="channel" list="channel-suggestions" placeholder="Ник или ссылка на канал" aria-label="Канал" autocomplete="off" spellcheck="false">
         <datalist id="channel-suggestions"></datalist>
-        <button title="Открыть канал и сохранять его эфиры, пока они идут">Отслеживать</button>
+        <button title="Открыть записи канала">Поиск</button>
+        <button type="button" id="follow" aria-pressed="false" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.2C.8 8.3 3 4.5 6.7 4.5c2 0 3.7 1.1 5.3 3 1.6-1.9 3.3-3 5.3-3 3.7 0 5.9 3.8 4.3 7.3C19.5 16.4 12 21 12 21z"/></svg>
+        </button>
       </form>
       <input id="search" type="search" placeholder="Поиск по названию" aria-label="Поиск по названию">
       <select id="period" aria-label="Период">

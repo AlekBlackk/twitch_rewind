@@ -1,7 +1,7 @@
 // Twitch serves every quality as its own playlist next to the source one:
 //   .../chunked/index-dvr.m3u8 (source), .../720p60/index-dvr.m3u8, ...
 // A DVR has no master playlist, so the playlists that exist are probed and listed in a master
-// built here: hls.js then gives quality switching and "Auto" on its own.
+// built here: hls.js then gives quality switching on its own.
 
 export const SOURCE = "chunked";
 
@@ -15,7 +15,7 @@ export function parseQuality(name) {
 }
 
 // Rough bit rate (fitted to a real broadcast: 720p60 is ~3.3 Mbit/s): hls.js only needs the order
-// and a ballpark to choose levels for "Auto".
+// and a ballpark to tell which level is the best.
 const estimateBandwidth = ({ height, fps }) => Math.round(height * height * fps * 0.105);
 
 /** @param {{name: string, url: string}[]} qualities */

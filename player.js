@@ -2,7 +2,7 @@ import { findLivePlaylist, getBroadcasts, getPastStreams, parseLogin, searchChan
 import { createLiveChat, createVodChat, noChat } from "./chat.js";
 import { getSavedBroadcasts, getWatchedChannels, unwatchChannel, watchChannel } from "./saved.js";
 import { loadEmotes } from "./emotes.js";
-import { buildMasterPlaylist, findQualities, SOURCE } from "./quality.js";
+import { buildMasterPlaylist, findQualities, parseQuality, SOURCE } from "./quality.js";
 import { ICONS } from "./icons.js";
 import { openClipEditor } from "./clip-editor.js";
 import { MIN_CLIP_SECONDS, storedUrl } from "./clip.js";
@@ -17,12 +17,12 @@ const [stage, playButton, muteButton, volume, seek, timeLabel, goLive, qualityWr
 // channel is opened by typing its name.
 const pageLogin = parseLogin(new URLSearchParams(location.search).get("channel") ?? "");
 let login = pageLogin;
-let trackLogin = false; // whether `login` is looked after: set by typing a name, not by the Twitch tab
 let broadcasts = [];
 let hls = null;
 let masterUrl = null; // blob URL of the master playlist built for the current broadcast
 let sourceUrl = null; // what hls.js loads: that master playlist, or the only quality's playlist
 let activeLevel = -1; // quality level being played
+let sourceHeight = 0; // the source playlist does not say its resolution: it is read from the video while the source plays
 let chat = null;
 let current = null;
 let lastShownId; // last chat message rendered, to skip re-rendering an unchanged chat
@@ -34,12 +34,18 @@ $("channel").value = login ?? "";
 showList();
 renderWatched();
 
-// Typing a channel opens it and, once it loads, starts looking after it (see saved.js).
+// Typing a channel only opens it; looking after it (see saved.js) is the heart button.
 $("channel-form").addEventListener("submit", (event) => {
   event.preventDefault();
   const typed = parseLogin($("channel").value);
-  if (typed) openChannel(typed, true);
+  if (typed) openChannel(typed);
   else status.textContent = "Введите ник канала или ссылку на него";
+});
+
+$("follow").addEventListener("click", async () => {
+  const followed = $("follow").getAttribute("aria-pressed") === "true";
+  await (followed ? unwatchChannel(login) : watchChannel(login));
+  renderWatched();
 });
 
 // Suggestions while typing: Twitch's channel search, asked once the typing pauses.
@@ -68,9 +74,8 @@ async function showSuggestions() {
   }
 }
 
-function openChannel(channel, track) {
+function openChannel(channel) {
   $("channel").value = login = channel;
-  trackLogin = track;
   emotes = new Map(); // emotes belong to the channel
   emotesRequested = false;
   broadcasts = [];
@@ -79,10 +84,13 @@ function openChannel(channel, track) {
   renderWatched();
 }
 
-$("page-channel").addEventListener("click", () => openChannel(pageLogin, false));
+$("page-channel").addEventListener("click", () => openChannel(pageLogin));
 
 async function renderWatched() {
   const channels = await getWatchedChannels();
+  const followed = channels.includes(login);
+  $("follow").setAttribute("aria-pressed", followed);
+  $("follow").title = $("follow").ariaLabel = followed ? "Перестать отслеживать канал" : "Отслеживать канал: сохранять его эфиры, пока они идут";
   // a way back to the channel of the Twitch tab, which is not in the list unless it is watched
   const pageButton = $("page-channel");
   pageButton.hidden = !pageLogin || pageLogin === login || channels.includes(pageLogin);
@@ -93,13 +101,12 @@ async function renderWatched() {
     const item = document.createElement("li");
     const open = document.createElement("button");
     open.textContent = channel;
-    open.addEventListener("click", () => openChannel(channel, true));
+    open.addEventListener("click", () => openChannel(channel));
     const remove = document.createElement("button");
     remove.textContent = "✕";
     remove.title = remove.ariaLabel = `Перестать отслеживать ${channel}`;
     remove.addEventListener("click", async () => {
       await unwatchChannel(channel);
-      if (channel === login) trackLogin = false; // reloading the list must not add it back
       renderWatched();
     });
     item.append(open, remove);
@@ -149,6 +156,7 @@ async function showList() {
   stop();
   watch.hidden = back.hidden = true;
   browse.hidden = false;
+  $("follow").hidden = true; // only a channel that loaded can be followed
   if (!login) {
     status.textContent = "Введите ник канала";
     return;
@@ -172,9 +180,7 @@ async function showList() {
         ...s, videoId: null, title: "Эфир без записи", thumbnail: null, live: false, knownServers,
       })),
     ];
-    // Only a channel typed in by hand is looked after: the background worker saves its live broadcasts.
-    // Opening a channel from the Twitch page just shows the list.
-    if (trackLogin) watchChannel(requested).then(renderWatched);
+    $("follow").hidden = false;
     renderList();
     if (!emotesRequested) {
       emotesRequested = true; // emote sets are loaded once per channel
@@ -281,7 +287,7 @@ async function open(broadcast) {
 }
 
 function play(qualities) {
-  // With several qualities hls.js gets a master playlist built from them (quality switching, "Auto").
+  // With several qualities hls.js gets a master playlist built from them (quality switching).
   masterUrl = qualities.length > 1
     ? URL.createObjectURL(new Blob([buildMasterPlaylist(qualities)], { type: "application/vnd.apple.mpegurl" }))
     : null;
@@ -311,6 +317,7 @@ function stop() {
   hls = null;
   if (masterUrl) URL.revokeObjectURL(masterUrl);
   masterUrl = null;
+  sourceHeight = 0;
   qualityWrap.hidden = true;
   chat?.close();
   chat = null;
@@ -414,7 +421,13 @@ seek.addEventListener("pointerdown", () => (scrubbing = true));
 addEventListener("pointerup", () => (scrubbing = false));
 seek.addEventListener("input", () => {
   video.currentTime = Number(seek.value);
+  renderSeekFill();
 });
+
+// The played part of the bar is painted by the stylesheet from this variable.
+function renderSeekFill() {
+  seek.style.setProperty("--played", `${seek.max > 0 ? (seek.value / seek.max) * 100 : 0}%`);
+}
 
 goLive.addEventListener("click", () => {
   if (hls?.liveSyncPosition) video.currentTime = hls.liveSyncPosition;
@@ -424,6 +437,7 @@ function renderTime() {
   const end = seekableEnd();
   seek.max = end;
   if (!scrubbing) seek.value = video.currentTime;
+  renderSeekFill();
 
   if (current?.live) {
     // Distance to the newest part of the recording, which itself runs ~30 s behind the real broadcast
@@ -456,35 +470,44 @@ function showControls() {
 stage.addEventListener("pointermove", showControls);
 stage.addEventListener("pointerdown", showControls);
 
-// ---- Quality: "Auto" plus the levels of the master playlist; the choice is remembered
+// ---- Quality: the levels of the master playlist, the best one unless another was chosen before; the choice is remembered
 
-const levelName = (level) => (level.name === SOURCE ? "Источник" : level.name);
+function levelName(level) {
+  if (level.name !== SOURCE) return level.name;
+  if (!sourceHeight) return "Источник";
+  // Nor its frame rate: the best transcode has the same one.
+  const transcodes = hls.levels.filter((other) => other !== level);
+  const bestTranscode = transcodes.reduce((best, other) => (other.bitrate > best.bitrate ? other : best));
+  return `Источник (${sourceHeight}p${parseQuality(bestTranscode.name).fps})`;
+}
+
+video.addEventListener("resize", () => {
+  // The chosen level (manualLevel), not the playing one: that is still unknown (activeLevel, currentLevel = -1)
+  // when the first frame arrives, and its resize would be missed.
+  if (hls?.levels[hls.manualLevel]?.name !== SOURCE) return;
+  sourceHeight = video.videoHeight;
+  renderQuality();
+});
 
 function setUpQuality() {
   const saved = readSetting("quality");
   const savedLevel = hls.levels.findIndex((level) => level.name === saved);
+  const bestLevel = hls.levels.reduce((best, level, i) => (level.bitrate > hls.levels[best].bitrate ? i : best), 0);
   qualityWrap.hidden = hls.levels.length < 2;
-  if (savedLevel >= 0) {
-    hls.currentLevel = savedLevel;
-  } else {
-    // Auto starts from the best level: it has no bandwidth measurement yet and would begin at the worst
-    hls.startLevel = hls.levels.reduce((best, level, i) => (level.bitrate > hls.levels[best].bitrate ? i : best), 0);
-  }
+  hls.currentLevel = savedLevel >= 0 ? savedLevel : bestLevel;
   renderQuality();
 }
 
 function renderQuality() {
   if (!hls || hls.levels.length < 2) return;
-  const auto = hls.autoLevelEnabled;
-  const playing = hls.levels[activeLevel];
   setIcon(qualityButton, "settings");
-  qualityButton.append(auto ? `Авто${playing ? ` · ${levelName(playing)}` : ""}` : levelName(hls.levels[hls.currentLevel]));
+  qualityButton.append(levelName(hls.levels[hls.manualLevel]));
 
   const best = hls.levels.map((level, index) => ({ level, index })).sort((a, b) => b.level.bitrate - a.level.bitrate);
   const entry = (label, index) =>
-    `<li><button role="menuitemradio" data-level="${index}" aria-checked="${index === -1 ? auto : !auto && hls.currentLevel === index}">${label}</button></li>`;
+    `<li><button role="menuitemradio" data-level="${index}" aria-checked="${hls.manualLevel === index}">${label}</button></li>`;
   // level names come from the master playlist built here, but are escaped anyway
-  qualityMenu.innerHTML = [entry("Авто", -1), ...best.map(({ level, index }) => entry(escapeHtml(levelName(level)), index))].join("");
+  qualityMenu.innerHTML = best.map(({ level, index }) => entry(escapeHtml(levelName(level)), index)).join("");
 }
 
 const escapeHtml = (text) => text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -497,8 +520,8 @@ qualityMenu.addEventListener("click", (event) => {
   const item = event.target.closest("button");
   if (!item || !hls) return;
   const level = Number(item.dataset.level);
-  hls.currentLevel = level; // -1 turns "Auto" on
-  writeSetting("quality", level < 0 ? "auto" : hls.levels[level].name);
+  hls.currentLevel = level;
+  writeSetting("quality", hls.levels[level].name);
   qualityMenu.hidden = true;
   renderQuality();
 });
