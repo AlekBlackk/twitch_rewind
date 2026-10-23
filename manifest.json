@@ -8,7 +8,7 @@
     "default_title": "Twitch Rewind: перемотка эфира",
     "default_icon": { "16": "icons/icon16.png", "32": "icons/icon32.png" }
   },
-  "background": { "service_worker": "background.js", "type": "module" },
+  "background": { "service_worker": "src/background.js", "type": "module" },
   "permissions": ["activeTab", "scripting", "storage", "alarms", "downloads"],
   "host_permissions": [
     "https://gql.twitch.tv/*",
@@ -19,6 +19,6 @@
     "https://api.betterttv.net/*"
   ],
   "web_accessible_resources": [
-    { "resources": ["player.html"], "matches": ["https://www.twitch.tv/*"] }
+    { "resources": ["src/player/player.html"], "matches": ["https://www.twitch.tv/*"] }
   ]
 }

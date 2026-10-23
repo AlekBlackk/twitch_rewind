@@ -9,7 +9,7 @@
     const channel = location.pathname.split("/")[1] ?? "";
     const frame = document.createElement("iframe");
     frame.id = "twitch-rewind";
-    frame.src = chrome.runtime.getURL(`player.html?channel=${encodeURIComponent(channel)}`);
+    frame.src = chrome.runtime.getURL(`src/player/player.html?channel=${encodeURIComponent(channel)}`);
     frame.allow = "autoplay; fullscreen";
 
     const MIN_WIDTH = 480;

@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { runInThisContext } from "node:vm";
-import { clipFileName, clipFragments, fetchClip, moveEdge, shiftRange, storedUrl } from "./clip.js";
+import { clipFileName, clipFragments, fetchClip, moveEdge, shiftRange, storedUrl } from "../src/core/clip.js";
 
 const fragments = [0, 10, 20, 30].map((start) => ({ start, duration: 10, url: `https://x/${start}.ts` }));
 
@@ -24,7 +24,7 @@ const bytesOf = async (blob) => new Uint8Array(await blob.arrayBuffer());
 const arrayBufferOf = (bytes) => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.length);
 
 test("fetchClip makes a plain MP4 from MPEG-TS segments and fails on a bad answer", async (t) => {
-  runInThisContext(await readFile(new URL("./vendor/mux.min.js", import.meta.url), "utf8")); // sets globalThis.muxjs, as in the page
+  runInThisContext(await readFile(new URL("../vendor/mux.min.js", import.meta.url), "utf8")); // sets globalThis.muxjs, as in the page
   t.mock.method(globalThis, "fetch", async (url) =>
     url.endsWith("bad.ts") ? { ok: false, status: 403 } : { ok: true, arrayBuffer: async () => arrayBufferOf(sampleTs) });
   const clip = await bytesOf(await fetchClip([{ url: "https://x/a.ts" }, { url: "https://x/b.ts" }]));

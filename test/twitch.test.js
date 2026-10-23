@@ -1,8 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { discoverServers, dvrPath, getPastStreams, parseLogin, parsePreviewUrl, searchChannels } from "./twitch.js";
-import { parseIrcMessage } from "./chat.js";
-import { twitchEmoteUrl } from "./emotes.js";
+import { discoverServers, dvrPath, getPastStreams, parseLogin, parsePreviewUrl, searchChannels } from "../src/core/twitch.js";
+import { parseIrcMessage } from "../src/core/chat.js";
+import { twitchEmoteUrl } from "../src/core/emotes.js";
 
 test("dvrPath matches a real DVR path seen on Twitch's CDN", async () => {
   assert.equal(

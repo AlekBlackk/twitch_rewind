@@ -11,7 +11,7 @@
 </div>
 
 Twitch Rewind проигрывает DVR-плейлист, который Twitch записывает на свой CDN во время трансляции
-(как строится ссылка, см. [`twitch.js`](twitch.js)). Откройте канал, нажмите на иконку расширения, и поверх
+(как строится ссылка, см. [`src/core/twitch.js`](src/core/twitch.js)). Откройте канал, нажмите на иконку расширения, и поверх
 страницы появится окно плеера со списком эфиров канала, чатом и эмодзи.
 
 > [!NOTE]
@@ -107,15 +107,15 @@ npm test
 
 | Файл | Назначение |
 | --- | --- |
-| [`background.js`](background.js) | Service worker: клик по иконке и опрос раз в 5 минут |
-| [`saved.js`](saved.js) | Сохранение плейлистов отслеживаемых каналов |
-| [`twitch.js`](twitch.js) | Запросы к Twitch и ссылки на DVR-плейлисты |
-| [`quality.js`](quality.js) | Разбор качества и мастер-плейлист |
-| [`overlay.js`](overlay.js) | Окно, вставляемое поверх страницы Twitch |
-| [`player.html`](player.html), [`player.js`](player.js), [`player.css`](player.css) | Плеер и список эфиров |
-| [`clip.js`](clip.js), [`clip-editor.js`](clip-editor.js) | Окно клипа: выбор отрезка и скачивание сегментов |
-| [`mp4.js`](mp4.js) | Сборка обычного mp4 из фрагментов (перемотка работает и в VLC) |
-| [`chat.js`](chat.js), [`emotes.js`](emotes.js) | Повтор чата и загрузка эмодзи |
+| [`src/background.js`](src/background.js) | Service worker: клик по иконке и опрос раз в 5 минут |
+| [`src/overlay.js`](src/overlay.js) | Окно, вставляемое поверх страницы Twitch |
+| [`src/core/twitch.js`](src/core/twitch.js) | Запросы к Twitch и ссылки на DVR-плейлисты |
+| [`src/core/saved.js`](src/core/saved.js) | Сохранение плейлистов отслеживаемых каналов |
+| [`src/core/quality.js`](src/core/quality.js) | Разбор качества и мастер-плейлист |
+| [`src/core/clip.js`](src/core/clip.js), [`src/core/mp4.js`](src/core/mp4.js) | Скачивание сегментов клипа и сборка обычного mp4 (перемотка работает и в VLC) |
+| [`src/core/chat.js`](src/core/chat.js), [`src/core/emotes.js`](src/core/emotes.js) | Повтор чата и загрузка эмодзи |
+| [`src/player/`](src/player) | Плеер и список эфиров (`player.html/.js/.css`), окно клипа (`clip-editor.js`), иконки |
+| [`test/`](test) | Тесты и образец видео для них (`fixtures/`) |
 
 ## 🙏 Благодарности
 

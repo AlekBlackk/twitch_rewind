@@ -1,11 +1,11 @@
-import { findLivePlaylist, getBroadcasts, getPastStreams, parseLogin, searchChannels } from "./twitch.js";
-import { createLiveChat, createVodChat, noChat } from "./chat.js";
-import { getSavedBroadcasts, getWatchedChannels, unwatchChannel, watchChannel } from "./saved.js";
-import { loadEmotes } from "./emotes.js";
-import { buildMasterPlaylist, findQualities, parseQuality, SOURCE } from "./quality.js";
+import { findLivePlaylist, getBroadcasts, getPastStreams, parseLogin, searchChannels } from "../core/twitch.js";
+import { createLiveChat, createVodChat, noChat } from "../core/chat.js";
+import { getSavedBroadcasts, getWatchedChannels, unwatchChannel, watchChannel } from "../core/saved.js";
+import { loadEmotes } from "../core/emotes.js";
+import { buildMasterPlaylist, findQualities, parseQuality, SOURCE } from "../core/quality.js";
 import { ICONS } from "./icons.js";
 import { openClipEditor } from "./clip-editor.js";
-import { MIN_CLIP_SECONDS, storedUrl } from "./clip.js";
+import { MIN_CLIP_SECONDS, storedUrl } from "../core/clip.js";
 
 const $ = (id) => document.getElementById(id);
 const [status, browse, list, watch, back, video, chatList, search, period, sort] =

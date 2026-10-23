@@ -1,8 +1,8 @@
-import { pollChannels } from "./saved.js";
+import { pollChannels } from "./core/saved.js";
 
 chrome.action.onClicked.addListener((tab) => {
   if (!tab.url?.startsWith("https://www.twitch.tv/")) return;
-  chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["overlay.js"] });
+  chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["src/overlay.js"] });
 });
 
 // Saving a live broadcast's playlist (see saved.js). Alarms fire only while Chrome runs, which is

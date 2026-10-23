@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { getSavedBroadcasts, getWatchedChannels, playlistDuration, pollChannels, unwatchChannel, watchChannel } from "./saved.js";
-import { dvrPath, getLiveStreams } from "./twitch.js";
+import { getSavedBroadcasts, getWatchedChannels, playlistDuration, pollChannels, unwatchChannel, watchChannel } from "../src/core/saved.js";
+import { dvrPath, getLiveStreams } from "../src/core/twitch.js";
 
 const STARTED = "2026-10-21T08:00:00Z";
 const PLAYLIST = "#EXTM3U\n#EXTINF:2.000,\na.ts\n#EXTINF:10.500,\nb.ts\n#EXT-X-ENDLIST";

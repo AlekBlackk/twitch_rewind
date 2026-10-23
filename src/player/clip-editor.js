@@ -2,7 +2,7 @@
 // a title (which becomes the file name) and the save button. The timeline shows the two minutes from the
 // player's position on, with the clip at its start.
 import { ICONS } from "./icons.js";
-import { clipFileName, clipFragments, fetchClip, moveEdge, shiftRange, storedUrl } from "./clip.js";
+import { clipFileName, clipFragments, fetchClip, moveEdge, shiftRange, storedUrl } from "../core/clip.js";
 
 const TIMELINE_SECONDS = 120;
 const DEFAULT_CLIP_SECONDS = 5;

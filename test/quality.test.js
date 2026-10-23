@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildMasterPlaylist, findQualities, parseQuality } from "./quality.js";
+import { buildMasterPlaylist, findQualities, parseQuality } from "../src/core/quality.js";
 
 test("parseQuality reads height and fps, ignores the source and audio names", () => {
   assert.deepEqual(parseQuality("720p60"), { height: 720, fps: 60 });
