@@ -5,6 +5,7 @@ import { loadEmotes } from "../core/emotes.js";
 import { buildMasterPlaylist, findQualities, parseQuality, SOURCE } from "../core/quality.js";
 import { ICONS } from "./icons.js";
 import { openClipEditor } from "./clip-editor.js";
+import { createMoments } from "./moments.js";
 import { MIN_CLIP_SECONDS, storedUrl } from "../core/clip.js";
 
 const $ = (id) => document.getElementById(id);
@@ -28,6 +29,7 @@ let current = null;
 let lastShownId; // last chat message rendered, to skip re-rendering an unchanged chat
 let emotes = new Map(); // third-party emote name -> image URL, filled in after the channel loads
 let emotesRequested = false;
+const moments = createMoments({ video, readSetting, writeSetting, formatTime });
 
 setView(readSetting("view") ?? "grid");
 $("channel").value = login ?? "";
@@ -278,6 +280,7 @@ async function open(broadcast) {
     if (current !== broadcast) return; // the user went back while the playlist was being found
     status.textContent = broadcast.title;
     play(qualities);
+    moments.open(broadcast, playlistUrl);
     if (broadcast.videoId) chat = createVodChat(broadcast.videoId, renderChat);
     else if (!broadcast.live) chat = noChat;
     else chat = createLiveChat(login, broadcast.startedAt, renderChat);
@@ -321,6 +324,7 @@ function stop() {
   qualityWrap.hidden = true;
   chat?.close();
   chat = null;
+  moments.close();
   lastShownId = undefined;
   video.removeAttribute("src");
   chatList.replaceChildren();
@@ -371,7 +375,7 @@ document.addEventListener("keydown", (event) => {
     f: toggleFullscreen,
   };
   const action = shortcuts[event.key];
-  const typing = event.target.matches("input:not([type=range]), select");
+  const typing = event.target.matches("input:not([type=range]), select, textarea");
   const onButton = event.key === " " && event.target.closest("button"); // the space bar presses the button
   if (!action || typing || onButton || watch.hidden || $("clip-dialog").open || event.altKey || event.ctrlKey || event.metaKey) return;
   event.preventDefault();
@@ -450,6 +454,7 @@ function renderTime() {
   } else {
     timeLabel.textContent = `${formatTime(video.currentTime)} / ${formatTime(end)}`;
   }
+  moments.renderMarks(end);
 }
 
 video.addEventListener("timeupdate", () => {

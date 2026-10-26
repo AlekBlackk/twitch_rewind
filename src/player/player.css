@@ -62,7 +62,7 @@ body.minimized > :not(#titlebar) {
   text-overflow: ellipsis;
 }
 
-button, input, select {
+button, input, select, textarea {
   padding: 7px 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -81,13 +81,13 @@ button:hover {
   background: var(--surface-hover);
 }
 
-input:focus, select:focus, button:focus-visible {
+input:focus, select:focus, textarea:focus, button:focus-visible {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgb(145 71 255 / 0.25);
   outline: none;
 }
 
-input::placeholder {
+input::placeholder, textarea::placeholder {
   color: #8a8a96;
 }
 
@@ -454,13 +454,37 @@ video {
   accent-color: #9147ff;
 }
 
+#seek-wrap {
+  position: relative;
+  margin: 0 0 4px;
+}
+
 #seek {
   display: block;
   width: 100%;
   height: 16px;
-  margin: 0 0 4px;
+  margin: 0;
   appearance: none;
   cursor: pointer;
+}
+
+/* Ticks of the moments with a keyword (moments.js). The insets are the half of the slider's thumb:
+   the thumb's centre, not its edge, is where the value sits. */
+#seek-marks {
+  position: absolute;
+  inset: 0 6px;
+  pointer-events: none;
+}
+
+#seek-marks i {
+  position: absolute;
+  top: 50%;
+  width: 3px;
+  height: 10px;
+  margin: -5px 0 0 -1.5px;
+  border-radius: 1px;
+  background: #ffd24a;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.6);
 }
 
 #seek::-webkit-slider-runnable-track {
@@ -702,7 +726,40 @@ video {
   cursor: default;
 }
 
-#chat {
+/* Side panel: the chat and the moments with a keyword (moments.js), one at a time */
+
+#side {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#tabs {
+  display: flex;
+}
+
+#tabs button {
+  flex: 1;
+}
+
+#tabs button:first-child {
+  border-radius: 8px 0 0 8px;
+}
+
+#tabs button:last-child {
+  border-radius: 0 8px 8px 0;
+  border-left: none;
+}
+
+#tabs button[aria-selected="true"] {
+  border-color: #772ce8;
+  background: #772ce8;
+  font-weight: 600;
+}
+
+#chat, #moments-list {
   margin: 0;
   padding: 8px;
   overflow-y: auto;
@@ -712,6 +769,114 @@ video {
   border-radius: 10px;
   overflow-wrap: anywhere;
   line-height: 1.45;
+}
+
+#chat {
+  flex: 1;
+  min-height: 0;
+}
+
+#moments {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#keywords {
+  box-sizing: border-box;
+  width: 100%;
+  resize: vertical;
+  min-height: 56px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* The side column is narrow: the language and "Заново" share a row, the main button has a row of its own */
+#moments-run {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+#moments-run select {
+  flex: 1;
+  min-width: 0;
+}
+
+#moments-reset {
+  flex: none;
+}
+
+#moments-toggle {
+  flex: 1 1 100%;
+  border-color: #772ce8;
+  background: #772ce8;
+  font-weight: 600;
+}
+
+#moments-toggle:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+#moments-reset:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+#moments-status {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+#moments-list {
+  flex: 1;
+  min-height: 0;
+  padding: 4px;
+}
+
+#moments-list:empty::before {
+  content: "Найденные моменты появятся здесь";
+  display: block;
+  padding: 32px 12px;
+  text-align: center;
+  color: #8a8a96;
+}
+
+#moments-list button {
+  width: 100%;
+  display: flex;
+  gap: 10px;
+  padding: 6px 8px;
+  border: none;
+  background: transparent;
+  text-align: left;
+}
+
+#moments-list button:hover {
+  background: rgb(255 255 255 / 0.07);
+}
+
+#moments-list time {
+  flex: none;
+  color: #ffd24a;
+  font-variant-numeric: tabular-nums;
+}
+
+#moments-list mark {
+  padding: 0 2px;
+  border-radius: 3px;
+  background: rgb(255 210 74 / 0.25);
+  color: inherit;
+}
+
+#moments-count {
+  margin-left: 4px;
+  font-variant-numeric: tabular-nums;
 }
 
 #chat li {

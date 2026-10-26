@@ -9,7 +9,7 @@
     "default_icon": { "16": "icons/icon16.png", "32": "icons/icon32.png" }
   },
   "background": { "service_worker": "src/background.js", "type": "module" },
-  "permissions": ["activeTab", "scripting", "storage", "alarms", "downloads"],
+  "permissions": ["activeTab", "scripting", "storage", "unlimitedStorage", "alarms", "downloads"],
   "host_permissions": [
     "https://gql.twitch.tv/*",
     "https://*.cloudfront.net/*",
@@ -18,6 +18,9 @@
     "https://7tv.io/*",
     "https://api.betterttv.net/*"
   ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  },
   "web_accessible_resources": [
     { "resources": ["src/player/player.html"], "matches": ["https://www.twitch.tv/*"] }
   ]

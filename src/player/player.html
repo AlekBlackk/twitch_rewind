@@ -57,7 +57,10 @@
       <div id="stage">
         <video id="video" playsinline></video>
         <div id="bar">
-          <input id="seek" type="range" min="0" max="0" step="1" value="0" aria-label="Перемотка">
+          <div id="seek-wrap">
+            <input id="seek" type="range" min="0" max="0" step="1" value="0" aria-label="Перемотка">
+            <div id="seek-marks" aria-hidden="true"></div>
+          </div>
           <div class="row">
             <button id="play" aria-label="Играть"></button>
             <button id="mute" aria-label="Звук"></button>
@@ -80,7 +83,28 @@
         <button data-seek="30">+30 с</button>
       </div>
     </div>
-    <ol id="chat" aria-label="Чат"></ol>
+    <aside id="side">
+      <div id="tabs" role="tablist">
+        <button id="tab-chat" role="tab" aria-selected="true" aria-controls="chat">Чат</button>
+        <button id="tab-moments" role="tab" aria-selected="false" aria-controls="moments">Моменты<span id="moments-count"></span></button>
+      </div>
+      <ol id="chat" aria-label="Чат"></ol>
+      <section id="moments" aria-label="Моменты по ключевым словам" hidden>
+        <textarea id="keywords" rows="3" aria-label="Ключевые слова" spellcheck="false"
+          placeholder="Слова и фразы, по одному в строке.&#10;Хватит части слова"></textarea>
+        <div id="moments-run">
+          <select id="moments-language" aria-label="Язык речи">
+            <option value="russian">Русский</option>
+            <option value="english">English</option>
+            <option value="">Определять сам</option>
+          </select>
+          <button id="moments-reset" hidden title="Стереть распознанный текст этого эфира и распознать его заново">Заново</button>
+          <button id="moments-toggle">Распознавать речь</button>
+        </div>
+        <p id="moments-status" role="status"></p>
+        <ol id="moments-list" aria-label="Найденные моменты"></ol>
+      </section>
+    </aside>
   </main>
 
   <dialog id="clip-dialog" aria-labelledby="clip-heading">
