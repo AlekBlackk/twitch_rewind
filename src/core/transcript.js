@@ -3,11 +3,14 @@
 //   transcript = { version, doneTo: seconds recognized so far, lines: [{ at: seconds, end: seconds (null if unknown), text }] }
 // A line is a phrase as the model delimited it.
 // Audio is cut into windows. A window is recognized with a lead-in before it and a tail after it, so no
-// phrase is cut at its edges; a line belongs to the window it starts in.
+// phrase is cut at its edges; a line belongs to the window it starts in. A window ends in a pause of the speech
+// (windowEnd), because the speech is cut into phrases anew for every window, and a phrase on the edge would be
+// found by both windows (or by neither) with different edges each time.
 
 // What recognized the transcript: raise it when the recognition gets better and old transcripts should be redone.
 // 2: the speech is found first (vad.js); before, lines could be glued from different places and invented over noise.
-export const TRANSCRIPT_VERSION = 2;
+// 3: the VAD is given the context it needs, and windows end in pauses: phrases are no longer doubled or lost between windows.
+export const TRANSCRIPT_VERSION = 3;
 
 export const emptyTranscript = () => ({ version: TRANSCRIPT_VERSION, doneTo: 0, lines: [] });
 
@@ -42,6 +45,16 @@ export const endOf = (segments) => (segments.length ? segments.at(-1).start + se
 export function windowSegments(segments, from, length) {
   const covered = segments.filter((s) => s.start + s.duration > from - LEAD_SECONDS && s.start < from + length + TAIL_SECONDS);
   return { start: covered[0]?.start ?? from, end: covered.length ? endOf(covered) : from, segments: covered };
+}
+
+/**
+ * Where the window that was to end at `to` really ends: the middle of the pause nearest to it (`pauses` are seconds
+ * from `windowStart`, see pauseMiddles), looking as far as halfway into the tail. `to` itself when there is none.
+ */
+export function windowEnd(pauses, windowStart, from, to) {
+  const candidates = pauses.map((pause) => windowStart + pause).filter((at) => at > from && at <= to + TAIL_SECONDS / 2);
+  if (!candidates.length) return to;
+  return candidates.reduce((best, at) => (Math.abs(at - to) < Math.abs(best - to) ? at : best));
 }
 
 /**

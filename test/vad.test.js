@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { speechSegments } from "../src/core/vad.js";
+import { CONTEXT_SAMPLES, FRAME_SAMPLES, pauseMiddles, speechSegments, vadInput } from "../src/core/vad.js";
 
 // 31.25 frames a second: a probability for every 32 ms
 const FRAME = 0.032;
@@ -31,4 +31,25 @@ test("speech that never pauses is cut at its weakest point before the model's li
   for (const { start, end } of segments) assert.ok(end - start <= 30 + 1e-9);
   near(segments[0].end, 25);
   assert.equal(segments[1].start, segments[0].end);
+});
+
+test("vadInput puts the 64 samples before the frame in front of it, silence before the first frame", () => {
+  const audio = Float32Array.from({ length: FRAME_SAMPLES * 3 }, (_, i) => i + 1);
+  const first = vadInput(audio, 0);
+  assert.equal(first.length, CONTEXT_SAMPLES + FRAME_SAMPLES);
+  assert.ok(first.subarray(0, CONTEXT_SAMPLES).every((sample) => sample === 0));
+  assert.deepEqual([...first.subarray(CONTEXT_SAMPLES, CONTEXT_SAMPLES + 2)], [1, 2]);
+
+  const second = vadInput(audio, 1);
+  assert.deepEqual([...second.subarray(0, 2)], [FRAME_SAMPLES - CONTEXT_SAMPLES + 1, FRAME_SAMPLES - CONTEXT_SAMPLES + 2]);
+  assert.equal(second[CONTEXT_SAMPLES - 1], FRAME_SAMPLES); // the last sample of the previous frame
+  assert.equal(second[CONTEXT_SAMPLES], FRAME_SAMPLES + 1); // the first one of this frame
+  assert.equal(second.at(-1), FRAME_SAMPLES * 2);
+});
+
+test("pauseMiddles gives the middles of the real pauses, not of the cuts inside long speech", () => {
+  const segments = [{ start: 2, end: 10 }, { start: 14, end: 20 }, { start: 20, end: 30 }, { start: 30.5, end: 40 }];
+  // before the first (0–2), between the 1st and 2nd (10–14); 20|20 touch; 30|30.5 is too short; after the last (40–45)
+  assert.deepEqual(pauseMiddles(segments, 45), [1, 12, 42.5]);
+  assert.deepEqual(pauseMiddles([], 10), [5]);
 });

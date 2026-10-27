@@ -5,7 +5,7 @@
 import { AutoModel, env, pipeline, Tensor } from "../../vendor/transformers.bundle.min.js";
 import { SAMPLE_RATE } from "../core/audio.js";
 import { MODEL, modelCache } from "../core/model-cache.js";
-import { FRAME_SAMPLES, speechSegments } from "../core/vad.js";
+import { CONTEXT_SAMPLES, FRAME_SAMPLES, pauseMiddles, speechSegments, vadInput } from "../core/vad.js";
 
 const VAD_MODEL = "onnx-community/silero-vad"; // 2 MB
 
@@ -45,7 +45,7 @@ async function speechProbabilities(audio) {
   let state = new Tensor("float32", new Float32Array(2 * 128), [2, 1, 128]);
   const probabilities = new Float32Array(Math.floor(audio.length / FRAME_SAMPLES));
   for (let frame = 0; frame < probabilities.length; frame++) {
-    const input = new Tensor("float32", audio.slice(frame * FRAME_SAMPLES, (frame + 1) * FRAME_SAMPLES), [1, FRAME_SAMPLES]);
+    const input = new Tensor("float32", vadInput(audio, frame), [1, CONTEXT_SAMPLES + FRAME_SAMPLES]);
     const { output, stateN } = await vad({ input, sr: rate, state });
     state = stateN;
     probabilities[frame] = output.data[0];
@@ -54,13 +54,15 @@ async function speechProbabilities(audio) {
 }
 
 /**
- * The speech of `audio` as [{ timestamp: [start, end], text }], in seconds from its start.
+ * The speech of `audio` as { chunks: [{ timestamp: [start, end], text }], pauses: [seconds] }, in seconds from its start.
  * Only speech goes to Whisper, a stretch of it at a time: it starts and ends between phrases, so nothing is cut, and
  * the library's gluing of overlapping chunks (which once joined phrases from different places into one line) is not needed.
  */
 async function transcribe({ audio, language }) {
   const lines = [];
-  for (const { start, end } of speechSegments(await speechProbabilities(audio), audio.length / SAMPLE_RATE)) {
+  const seconds = audio.length / SAMPLE_RATE;
+  const segments = speechSegments(await speechProbabilities(audio), seconds);
+  for (const { start, end } of segments) {
     const speech = audio.slice(Math.round(start * SAMPLE_RATE), Math.round(end * SAMPLE_RATE));
     const { chunks } = await recognizer(speech, { language, task: "transcribe", return_timestamps: true });
     for (const { timestamp, text } of chunks) {
@@ -71,7 +73,7 @@ async function transcribe({ audio, language }) {
       }
     }
   }
-  return lines;
+  return { chunks: lines, pauses: pauseMiddles(segments, seconds) };
 }
 
 onmessage = async ({ data: { id, type, ...request } }) => {

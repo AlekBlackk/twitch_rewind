@@ -5,8 +5,9 @@ import { adtsFromTs, decodeAudio, SAMPLE_RATE } from "../core/audio.js";
 import { storedUrl } from "../core/clip.js";
 import {
   addLines, endOf, LIVE_WINDOW_SECONDS, loadTranscript, parseAudioPlaylist, saveTranscript, TAIL_SECONDS, WINDOW_SECONDS,
-  windowSegments,
+  windowEnd, windowSegments,
 } from "../core/transcript.js";
+import { createWorkerClient } from "./worker-client.js";
 
 const AUDIO_RENDITIONS = ["audio_only", "160p30", "chunked"]; // the first that exists
 const LIVE_POLL_MS = 15000;
@@ -57,35 +58,11 @@ async function loadWindowAudio({ start, end, segments }, signal) {
 }
 
 export function createTranscriber() {
-  let worker = null;
-  let nextId = 0;
-  const pending = new Map();
   let onLoadProgress = () => {};
-
-  const ask = (message, transfer = []) => {
-    worker ??= startWorker();
-    return new Promise((resolve, reject) => {
-      const id = nextId++;
-      pending.set(id, { resolve, reject });
-      worker.postMessage({ ...message, id }, transfer);
-    });
-  };
-
-  function startWorker() {
-    const created = new Worker(new URL("./whisper-worker.js", import.meta.url), { type: "module" });
-    created.onmessage = ({ data }) => {
-      if (data.type === "progress") return onLoadProgress(data);
-      const request = pending.get(data.id);
-      pending.delete(data.id);
-      if (data.error) request.reject(new Error(data.error));
-      else request.resolve(data.result);
-    };
-    created.onerror = (event) => {
-      for (const request of pending.values()) request.reject(new Error(event.message || "ошибка воркера"));
-      pending.clear();
-    };
-    return created;
-  }
+  const worker = createWorkerClient(
+    () => new Worker(new URL("./whisper-worker.js", import.meta.url), { type: "module" }),
+    (progress) => onLoadProgress(progress),
+  );
 
   return {
     /**
@@ -115,26 +92,22 @@ export function createTranscriber() {
         const window = windowSegments(segments, from, length);
         const audio = await loadWindowAudio(window, signal);
         if (signal.aborted) return;
-        let chunks = [];
+        let recognized = { chunks: [], pauses: [] };
         if (audio.length && !isSilent(audio)) {
           if (!modelLoaded) {
             onLoading({ loaded: 0, total: 0 });
-            await ask({ type: "load" });
+            await worker.ask({ type: "load" });
             onLoading(null);
             modelLoaded = true;
           }
-          chunks = await ask({ type: "transcribe", audio, language: language || undefined }, [audio.buffer]);
+          recognized = await worker.ask({ type: "transcribe", audio, language: language || undefined }, [audio.buffer]);
         }
-        transcript = addLines(transcript, chunks, window.start, from, from + length);
+        const to = windowEnd(recognized.pauses, window.start, from, from + length);
+        transcript = addLines(transcript, recognized.chunks, window.start, from, to);
         await saveTranscript(streamId, transcript);
       }
     },
 
-    close() {
-      worker?.terminate();
-      worker = null;
-      for (const request of pending.values()) request.reject(new Error("распознавание остановлено"));
-      pending.clear();
-    },
+    close: worker.close,
   };
 }
