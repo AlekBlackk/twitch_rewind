@@ -80,3 +80,21 @@ test("a phrase on the edge of a window is found once, however the next window cu
   transcript = addLines(transcript, [{ timestamp: [4.6, 9], text: "спасибо за донат Вася" }, { timestamp: [12, 14], text: "дальше" }], 302.5, end, 600);
   assert.deepEqual(transcript.lines.map((line) => line.text), ["спасибо за донат Вася", "дальше"]);
 });
+
+test("parseAudioPlaylist gives the segments of an fMP4 playlist the init segment they follow", () => {
+  const fmp4 = `#EXTM3U
+#EXT-X-MAP:URI="init-a.mp4"
+#EXTINF:2.000,
+0.mp4
+#EXTINF:2.000,
+1.mp4
+#EXT-X-MAP:URI="init-b.mp4?token=1"
+#EXTINF:2.000,
+2.mp4
+`;
+  const { segments } = parseAudioPlaylist(fmp4, url);
+  assert.deepEqual(segments.map((s) => [s.url.split("/").at(-1), s.init?.split("/").at(-1)]), [
+    ["0.mp4", "init-a.mp4"], ["1.mp4", "init-a.mp4"], ["2.mp4", "init-b.mp4?token=1"],
+  ]);
+  assert.equal(parseAudioPlaylist(playlist, url).segments[0].init, null); // MPEG-TS: no init segment
+});

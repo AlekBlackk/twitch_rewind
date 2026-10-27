@@ -109,13 +109,13 @@ export function createMoments({ video, readSetting, writeSetting, formatTime }) 
         ? `Загрузка модели: ${Math.round((loading.loaded / loading.total) * 100)}% (${Math.round(loading.loaded / MB)} из ${Math.round(loading.total / MB)} МБ). Это один раз, потом модель берётся из кэша браузера`
         : "Готовлю модель распознавания…";
     } else if (finished) {
-      status.textContent = `Эфир распознан целиком (${formatTime(recognized)})`;
+      status.textContent = `Эфир распознан целиком (${formatTime(recognized)}), фраз: ${transcript.lines.length}`;
     } else if (!transcript.doneTo) {
       status.textContent = controller
         ? "Начинаю…"
         : "Речь пока не распознавалась. Она распознаётся на видеокарте, пока открыто окно, и сохраняется для этого эфира";
     } else {
-      status.textContent = `Распознано до ${formatTime(recognized)}${audioLength ? ` из ${formatTime(audioLength)}` : ""}`;
+      status.textContent = `Распознано до ${formatTime(recognized)}${audioLength ? ` из ${formatTime(audioLength)}` : ""}, фраз: ${transcript.lines.length}`;
     }
     if (!failure && !loading && transcript.doneTo && transcript.version !== TRANSCRIPT_VERSION) {
       status.textContent += ". Эта расшифровка сделана старой версией распознавания и местами ошибается: нажмите «Заново»";

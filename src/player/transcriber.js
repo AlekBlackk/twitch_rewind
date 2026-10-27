@@ -1,7 +1,7 @@
 // Recognizes the speech of a broadcast window by window (see transcript.js) and keeps the result.
 // The audio comes from the lightest rendition of the DVR, which is a few hundred kilobytes per
 // minute (a 6 hour stream is ~300 MB), is decoded here and recognized by whisper-worker.js on the GPU.
-import { adtsFromTs, decodeAudio, SAMPLE_RATE } from "../core/audio.js";
+import { decodeSegment, SAMPLE_RATE } from "../core/audio.js";
 import { storedUrl } from "../core/clip.js";
 import {
   addLines, endOf, LIVE_WINDOW_SECONDS, loadTranscript, parseAudioPlaylist, saveTranscript, TAIL_SECONDS, WINDOW_SECONDS,
@@ -43,17 +43,24 @@ const sleep = (ms, signal) => new Promise((resolve) => {
 
 const isSilent = (samples) => Math.sqrt(samples.reduce((sum, s) => sum + s * s, 0) / samples.length) < SILENCE_LEVEL;
 
-// The samples of the window, each segment at its place. A segment that cannot be decoded stays silent.
-async function loadWindowAudio({ start, end, segments }, signal) {
+const readBytes = async (response) => new Uint8Array(await response.arrayBuffer());
+
+// The samples of the window, each segment at its place. A segment that cannot be decoded stays silent, but a window
+// where none can be would be taken for a silent one and skipped, and the speech in it lost without a word: that is an error.
+export async function loadWindowAudio({ start, end, segments }, signal) {
   const audio = new Float32Array(Math.ceil((end - start) * SAMPLE_RATE));
+  const inits = new Map(); // fMP4: the init segment is the same for most of the segments
+  const initOf = (url) => (url ? inits.get(url) ?? inits.set(url, fetchWithRetry(url, signal, readBytes)).get(url) : null);
+  let decoded = 0;
   await Promise.all(segments.map(async (segment) => {
-    const bytes = await fetchWithRetry(storedUrl(segment.url), signal, async (r) => new Uint8Array(await r.arrayBuffer()));
-    const adts = adtsFromTs(bytes);
-    const samples = adts.length ? await decodeAudio(adts).catch(() => null) : null;
+    const [bytes, init] = await Promise.all([fetchWithRetry(storedUrl(segment.url), signal, readBytes), initOf(segment.init)]);
+    const samples = await decodeSegment(bytes, init).catch(() => null);
     if (!samples) return;
+    decoded++;
     const offset = Math.round((segment.start - start) * SAMPLE_RATE);
     audio.set(samples.subarray(0, audio.length - offset), offset);
   }));
+  if (segments.length && !decoded) throw new Error("Браузер не смог декодировать звук эфира");
   return audio;
 }
 

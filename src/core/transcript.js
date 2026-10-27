@@ -21,17 +21,24 @@ export const TAIL_SECONDS = 15;
 
 const PREFIX = "transcript:";
 
-/** The segments of a media playlist, each with its start in seconds from the broadcast start. */
+/**
+ * The segments of a media playlist, each with its start in seconds from the broadcast start and, for fMP4,
+ * the url of the init segment it follows (`init`, null for MPEG-TS).
+ */
 export function parseAudioPlaylist(text, playlistUrl) {
   const segments = [];
   let start = 0;
   let duration = null;
+  let init = null;
   for (const line of text.split("\n").map((l) => l.trim())) {
     const extinf = /^#EXTINF:([\d.]+)/.exec(line);
-    if (extinf) {
+    const map = /^#EXT-X-MAP:.*URI="([^"]+)"/.exec(line);
+    if (map) {
+      init = new URL(map[1], playlistUrl).href;
+    } else if (extinf) {
       duration = Number(extinf[1]);
     } else if (line && !line.startsWith("#") && duration !== null) {
-      segments.push({ url: new URL(line, playlistUrl).href, start, duration });
+      segments.push({ url: new URL(line, playlistUrl).href, init, start, duration });
       start += duration;
       duration = null;
     }
