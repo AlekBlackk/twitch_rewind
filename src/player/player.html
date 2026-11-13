@@ -60,6 +60,11 @@
           <div id="seek-wrap">
             <input id="seek" type="range" min="0" max="0" step="1" value="0" aria-label="Перемотка">
             <div id="seek-marks" aria-hidden="true"></div>
+            <div id="seek-preview" aria-hidden="true" hidden>
+              <video muted playsinline hidden></video>
+              <canvas width="192" height="108"></canvas>
+              <span></span>
+            </div>
           </div>
           <div class="row">
             <button id="play" aria-label="Играть"></button>
@@ -69,9 +74,16 @@
             <span id="time"></span>
             <span class="spacer"></span>
             <button id="clip" aria-label="Создать клип" title="Создать клип"></button>
-            <div class="menu-wrap" id="quality-wrap" hidden>
-              <button id="quality" aria-haspopup="true" aria-label="Качество"></button>
-              <ul id="quality-menu" hidden></ul>
+            <div class="menu-wrap">
+              <button id="settings" aria-haspopup="true" aria-label="Настройки"></button>
+              <div id="settings-menu" hidden>
+                <p class="menu-heading">Скорость</p>
+                <div id="speed-menu" role="group" aria-label="Скорость"></div>
+                <div id="quality-section" hidden>
+                  <p class="menu-heading">Качество</p>
+                  <ul id="quality-menu" aria-label="Качество"></ul>
+                </div>
+              </div>
             </div>
             <button id="fullscreen" aria-label="На весь экран"></button>
           </div>

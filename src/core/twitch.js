@@ -176,8 +176,8 @@ export async function discoverServers() {
 }
 
 export async function findLivePlaylist(login, { streamId, startedAt, knownServers }) {
-  const path = await dvrPath(login, streamId, startedAt);
-  const currentServers = await discoverServers().catch(() => []); // the lists below still work without it
+  // the lists below still work without the current servers; the two do not depend on each other
+  const [path, currentServers] = await Promise.all([dvrPath(login, streamId, startedAt), discoverServers().catch(() => [])]);
   const urls = [...new Set([...knownServers, ...currentServers, ...FALLBACK_SERVERS])]
     .map((server) => `https://${server}.cloudfront.net/${path}/chunked/index-dvr.m3u8`);
   // All servers at once (one by one took ~12 s); the order keeps the channel's own server first.

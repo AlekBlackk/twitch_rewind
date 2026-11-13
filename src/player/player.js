@@ -6,13 +6,16 @@ import { buildMasterPlaylist, findQualities, parseQuality, SOURCE } from "../cor
 import { ICONS } from "./icons.js";
 import { openClipEditor } from "./clip-editor.js";
 import { createMoments } from "./moments.js";
+import { createSeekPreview } from "./seek-preview.js";
 import { MIN_CLIP_SECONDS, storedUrl } from "../core/clip.js";
 
 const $ = (id) => document.getElementById(id);
 const [status, browse, list, watch, back, video, chatList, search, period, sort] =
   ["status", "browse", "list", "watch", "back", "video", "chat", "search", "period", "sort"].map($);
-const [stage, playButton, muteButton, volume, seek, timeLabel, goLive, qualityWrap, qualityButton, qualityMenu, fullscreenButton] =
-  ["stage", "play", "mute", "volume", "seek", "time", "go-live", "quality-wrap", "quality", "quality-menu", "fullscreen"].map($);
+const [stage, playButton, muteButton, volume, seek, timeLabel, goLive, fullscreenButton] =
+  ["stage", "play", "mute", "volume", "seek", "time", "go-live", "fullscreen"].map($);
+const [settingsButton, settingsMenu, speedMenu, qualitySection, qualityMenu] =
+  ["settings", "settings-menu", "speed-menu", "quality-section", "quality-menu"].map($);
 
 // The window starts on the channel of the Twitch tab (the overlay passes it in the URL); any other
 // channel is opened by typing its name.
@@ -30,6 +33,7 @@ let lastShownId; // last chat message rendered, to skip re-rendering an unchange
 let emotes = new Map(); // third-party emote name -> image URL, filled in after the channel loads
 let emotesRequested = false;
 const moments = createMoments({ video, readSetting, writeSetting, formatTime });
+const seekPreview = createSeekPreview({ seek, formatTime });
 
 setView(readSetting("view") ?? "grid");
 $("channel").value = login ?? "";
@@ -165,25 +169,11 @@ async function showList() {
   }
   const requested = login;
   status.textContent = `${login}: загружаю эфиры…`;
+  // sullygnome is the slowest source (and may be down, which only means fewer broadcasts): it is asked at
+  // once, but the list does not wait for it.
+  const pastStreams = getPastStreams(requested).catch(() => []);
   try {
     const channel = await getBroadcasts(requested);
-    const listed = new Set(channel.broadcasts.map((b) => b.streamId));
-    const saved = await getSavedBroadcasts(requested, listed);
-    // sullygnome being down only means fewer broadcasts in the list
-    const past = await getPastStreams(requested).catch(() => []);
-    if (login !== requested) return; // another channel was typed in meanwhile
-    const have = new Set([...listed, ...saved.map((b) => b.streamId)]);
-    const knownServers = channel.broadcasts.map((b) => b.server).filter(Boolean);
-    broadcasts = [
-      ...channel.broadcasts,
-      ...saved,
-      // the playlist of these is searched for when one is opened (see open)
-      ...past.filter((s) => !have.has(s.streamId)).map((s) => ({
-        ...s, videoId: null, title: "Эфир без записи", thumbnail: null, live: false, knownServers,
-      })),
-    ];
-    $("follow").hidden = false;
-    renderList();
     if (!emotesRequested) {
       emotesRequested = true; // emote sets are loaded once per channel
       loadEmotes(channel.channelId).then((loaded) => {
@@ -193,6 +183,26 @@ async function showList() {
         renderChat();
       });
     }
+    const listed = new Set(channel.broadcasts.map((b) => b.streamId));
+    const saved = await getSavedBroadcasts(requested, listed);
+    if (login !== requested) return; // another channel was typed in meanwhile
+    broadcasts = [...channel.broadcasts, ...saved];
+    $("follow").hidden = false;
+    renderList();
+
+    const past = await pastStreams;
+    if (login !== requested) return;
+    const have = new Set(broadcasts.map((b) => b.streamId));
+    const knownServers = channel.broadcasts.map((b) => b.server).filter(Boolean);
+    const withoutRecord = past.filter((s) => !have.has(s.streamId)).map((s) => ({
+      // the playlist of these is searched for when one is opened (see open)
+      ...s, videoId: null, title: "Эфир без записи", thumbnail: null, live: false, knownServers,
+    }));
+    if (!withoutRecord.length) return;
+    broadcasts = [...broadcasts, ...withoutRecord];
+    const scrolled = list.scrollTop;
+    renderList();
+    list.scrollTop = scrolled; // the list is rebuilt under a reader who may already be scrolling it
   } catch (error) {
     if (login === requested) status.textContent = `${requested}: ${error.message}`;
   }
@@ -220,7 +230,11 @@ function renderItem(broadcast) {
   const button = document.createElement("button");
   const thumb = document.createElement(broadcast.thumbnail ? "img" : "div");
   thumb.className = "thumb";
-  if (broadcast.thumbnail) thumb.src = broadcast.thumbnail;
+  if (broadcast.thumbnail) {
+    thumb.src = broadcast.thumbnail;
+    thumb.loading = "lazy"; // a channel has hundreds of broadcasts, only the visible ones need their picture
+    thumb.decoding = "async";
+  }
   const title = document.createElement("strong");
   title.textContent = broadcast.title;
   const meta = document.createElement("span");
@@ -296,6 +310,9 @@ function play(qualities) {
     : null;
   hls = new Hls({
     xhrSetup: (xhr, fragUrl) => xhr.open("GET", storedUrl(fragUrl)),
+    maxBufferLength: 60, // more than the default 30 s ahead rides out a slow moment of the network
+    backBufferLength: 90, // what was played is not kept forever: a source-quality hour would not fit in memory
+    startFragPrefetch: true, // the first segment is loaded while the playlist is still being parsed
   });
   // A live DVR playlist is an EVENT playlist without ENDLIST: hls.js starts at the live edge,
   // keeps reloading it, and the whole broadcast from its start stays seekable.
@@ -310,6 +327,7 @@ function play(qualities) {
   sourceUrl = masterUrl ?? qualities[0].url;
   hls.loadSource(sourceUrl);
   hls.attachMedia(video);
+  seekPreview.open(sourceUrl);
   video.play().catch(() => {}); // autoplay may be blocked: then the user presses play
 }
 
@@ -321,7 +339,9 @@ function stop() {
   if (masterUrl) URL.revokeObjectURL(masterUrl);
   masterUrl = null;
   sourceHeight = 0;
-  qualityWrap.hidden = true;
+  qualitySection.hidden = true;
+  renderSettingsButton();
+  seekPreview.close();
   chat?.close();
   chat = null;
   moments.close();
@@ -347,9 +367,10 @@ const ARROW_SEEK_SECONDS = 10;
 const AT_LIVE_SECONDS = 15; // closer to the edge of the recording than this counts as "live"
 const HIDE_CONTROLS_MS = 3000;
 
-const setIcon = (button, name) => {
+// a declaration, not a const: stop() runs before this section during the start-up
+function setIcon(button, name) {
   button.innerHTML = ICONS[name];
-};
+}
 const seekableEnd = () => (video.seekable.length ? video.seekable.end(video.seekable.length - 1) : video.duration || 0);
 const togglePlay = () => (video.paused ? video.play().catch(() => {}) : video.pause());
 const toggleFullscreen = () => (document.fullscreenElement ? document.exitFullscreen() : stage.requestFullscreen());
@@ -423,10 +444,20 @@ renderVolume();
 let scrubbing = false;
 seek.addEventListener("pointerdown", () => (scrubbing = true));
 addEventListener("pointerup", () => (scrubbing = false));
+// Dragging fires `input` for every pixel; each seek makes the player load another segment. So only one
+// seek runs at a time and the newest position waits for it to finish.
+let pendingSeek = null;
 seek.addEventListener("input", () => {
-  video.currentTime = Number(seek.value);
+  pendingSeek = Number(seek.value);
   renderSeekFill();
+  if (!video.seeking) applyPendingSeek();
 });
+video.addEventListener("seeked", applyPendingSeek);
+function applyPendingSeek() {
+  if (pendingSeek === null) return;
+  video.currentTime = pendingSeek;
+  pendingSeek = null;
+}
 
 // The played part of the bar is painted by the stylesheet from this variable.
 function renderSeekFill() {
@@ -469,13 +500,53 @@ function showControls() {
   stage.classList.remove("idle");
   clearTimeout(hideTimer);
   hideTimer = setTimeout(() => {
-    if (!video.paused && qualityMenu.hidden) stage.classList.add("idle");
+    if (!video.paused && settingsMenu.hidden) stage.classList.add("idle");
   }, HIDE_CONTROLS_MS);
 }
 stage.addEventListener("pointermove", showControls);
 stage.addEventListener("pointerdown", showControls);
 
-// ---- Quality: the levels of the master playlist, the best one unless another was chosen before; the choice is remembered
+// ---- Settings menu: playback speed and quality, both remembered
+
+const SPEEDS = [0.5, 1, 1.5, 2];
+const formatSpeed = (speed) => `${speed}×`;
+
+// Loading a broadcast resets playbackRate to defaultPlaybackRate, so both are set.
+function setSpeed(speed) {
+  video.defaultPlaybackRate = video.playbackRate = speed;
+}
+
+const savedSpeed = Number(readSetting("speed"));
+setSpeed(SPEEDS.includes(savedSpeed) ? savedSpeed : 1);
+speedMenu.innerHTML = SPEEDS.map((speed) =>
+  `<button role="menuitemradio" data-speed="${speed}">${formatSpeed(speed)}</button>`).join("");
+renderSpeed();
+
+function renderSpeed() {
+  for (const button of speedMenu.children) {
+    button.setAttribute("aria-checked", Number(button.dataset.speed) === video.playbackRate);
+  }
+  renderSettingsButton();
+}
+
+speedMenu.addEventListener("click", (event) => {
+  const item = event.target.closest("button");
+  if (!item) return;
+  setSpeed(Number(item.dataset.speed));
+  writeSetting("speed", video.playbackRate);
+});
+video.addEventListener("ratechange", renderSpeed);
+
+// The button names the quality (when there is a choice) and the speed (when it is not the usual one).
+function renderSettingsButton() {
+  const parts = [];
+  if (hls?.levels.length > 1) parts.push(levelName(hls.levels[hls.manualLevel]));
+  if (video.playbackRate !== 1) parts.push(formatSpeed(video.playbackRate));
+  setIcon(settingsButton, "settings");
+  if (parts.length) settingsButton.append(parts.join(" · "));
+}
+
+// Quality: the levels of the master playlist, the best one unless another was chosen before
 
 function levelName(level) {
   if (level.name !== SOURCE) return level.name;
@@ -498,16 +569,14 @@ function setUpQuality() {
   const saved = readSetting("quality");
   const savedLevel = hls.levels.findIndex((level) => level.name === saved);
   const bestLevel = hls.levels.reduce((best, level, i) => (level.bitrate > hls.levels[best].bitrate ? i : best), 0);
-  qualityWrap.hidden = hls.levels.length < 2;
+  qualitySection.hidden = hls.levels.length < 2;
   hls.currentLevel = savedLevel >= 0 ? savedLevel : bestLevel;
   renderQuality();
 }
 
 function renderQuality() {
+  renderSettingsButton();
   if (!hls || hls.levels.length < 2) return;
-  setIcon(qualityButton, "settings");
-  qualityButton.append(levelName(hls.levels[hls.manualLevel]));
-
   const best = hls.levels.map((level, index) => ({ level, index })).sort((a, b) => b.level.bitrate - a.level.bitrate);
   const entry = (label, index) =>
     `<li><button role="menuitemradio" data-level="${index}" aria-checked="${hls.manualLevel === index}">${label}</button></li>`;
@@ -517,8 +586,8 @@ function renderQuality() {
 
 const escapeHtml = (text) => text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
-qualityButton.addEventListener("click", () => {
-  qualityMenu.hidden = !qualityMenu.hidden;
+settingsButton.addEventListener("click", () => {
+  settingsMenu.hidden = !settingsMenu.hidden;
   showControls();
 });
 qualityMenu.addEventListener("click", (event) => {
@@ -527,11 +596,11 @@ qualityMenu.addEventListener("click", (event) => {
   const level = Number(item.dataset.level);
   hls.currentLevel = level;
   writeSetting("quality", hls.levels[level].name);
-  qualityMenu.hidden = true;
+  settingsMenu.hidden = true;
   renderQuality();
 });
 document.addEventListener("click", (event) => {
-  if (!event.target.closest(".menu-wrap")) qualityMenu.hidden = true;
+  if (!event.target.closest(".menu-wrap")) settingsMenu.hidden = true;
 });
 
 // ---- Clip: the editor opens on the last seconds up to the current position (see clip-editor.js)
@@ -550,8 +619,14 @@ function renderChat() {
   const messages = chat.messagesAt(video.currentTime);
   const shownId = messages.at(-1)?.id ?? "empty";
   if (shownId === lastShownId) return;
+  const previous = lastShownId === undefined || lastShownId === "empty" ? -1 : messages.findLastIndex((m) => m.id === lastShownId);
   lastShownId = shownId;
-  if (messages.length) {
+  if (previous >= 0) {
+    // playback went on: the window moved forward, so only the new lines are added (and the oldest dropped)
+    // instead of rebuilding all of them, emote images included
+    chatList.append(...messages.slice(previous + 1).map(renderMessage));
+    while (chatList.children.length > messages.length) chatList.firstElementChild.remove();
+  } else if (messages.length) {
     chatList.replaceChildren(...messages.map(renderMessage));
   } else {
     const hint = document.createElement("li");

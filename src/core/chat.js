@@ -4,13 +4,25 @@ import { twitchEmoteUrl } from "./emotes.js";
 
 const MAX_SHOWN = 150;
 
-const visible = (messages, seconds) => messages.filter((m) => m.at <= seconds).slice(-MAX_SHOWN);
+// The messages are in time order (pages are loaded forward, IRC lines arrive as they were sent), so the
+// last visible one is found by bisection: this runs on every time update, over thousands of messages.
+export function visibleMessages(messages, seconds) {
+  let low = 0;
+  let high = messages.length;
+  while (low < high) {
+    const middle = (low + high) >> 1;
+    if (messages[middle].at <= seconds) low = middle + 1;
+    else high = middle;
+  }
+  return messages.slice(Math.max(0, low - MAX_SHOWN), low);
+}
 
 // Replay chat of a VOD (also while it is still recording). Twitch only serves it by offset
 // (cursor paging needs an integrity token), ~1 minute per request, so it is loaded as playback moves.
 // `onUpdate` is called when new messages arrive, so a paused player still shows them.
 export function createVodChat(videoId, onUpdate) {
   let messages = [];
+  let ids = new Set(); // of `messages`, kept alongside so that a page is not compared against the whole list
   let loadedFrom = Infinity;
   let loadedTo = -Infinity;
   let pending = null; // the in-flight request: { offset }
@@ -21,8 +33,13 @@ export function createVodChat(videoId, onUpdate) {
     try {
       const page = await getComments(videoId, offset);
       if (pending !== request) return; // a newer seek replaced this request
-      const known = new Set(isSeek ? [] : messages.map((m) => m.id));
-      messages = (isSeek ? [] : messages).concat(page.filter((m) => !known.has(m.id)));
+      if (isSeek) {
+        messages = [];
+        ids = new Set();
+      }
+      const fresh = page.filter((m) => !ids.has(m.id));
+      for (const message of fresh) ids.add(message.id);
+      messages.push(...fresh);
       if (isSeek) loadedFrom = offset;
       loadedTo = Math.max(offset, page.at(-1)?.at ?? offset);
       onUpdate();
@@ -44,7 +61,7 @@ export function createVodChat(videoId, onUpdate) {
       } else if (!pending && Date.now() >= nextPollAt && seconds > loadedTo - 20) {
         load(loadedTo, false);
       }
-      return visible(messages, seconds);
+      return visibleMessages(messages, seconds);
     },
     emptyHint: "Сообщений пока нет",
     close() {},
@@ -88,7 +105,7 @@ export function createLiveChat(login, startedAt, onUpdate) {
     onUpdate();
   };
   return {
-    messagesAt: (seconds) => visible(messages, seconds),
+    messagesAt: (seconds) => visibleMessages(messages, seconds),
     emptyHint: "Чата за этот момент нет: у эфиров без записи доступны только последние ~800 сообщений до открытия окна и всё, что пишут после",
     close: () => socket.close(),
   };

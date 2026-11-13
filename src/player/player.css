@@ -539,7 +539,7 @@ video {
   color: #ff4f4d;
 }
 
-#bar #quality {
+#bar #settings {
   width: auto;
   padding: 0 10px;
   gap: 6px;
@@ -551,17 +551,36 @@ video {
   position: relative;
 }
 
-#quality-menu {
+#settings-menu {
   position: absolute;
   right: 0;
   bottom: 100%;
   margin: 0 0 6px;
   padding: 4px;
-  min-width: 170px;
-  list-style: none;
+  min-width: 190px;
   background: #18181b;
   border: 1px solid #3a3a3d;
   border-radius: 6px;
+}
+
+#settings-menu .menu-heading {
+  margin: 0;
+  padding: 6px 10px 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+#quality-section {
+  margin-top: 4px;
+  border-top: 1px solid #3a3a3d;
+}
+
+#quality-menu {
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 #bar #quality-menu button {
@@ -576,6 +595,55 @@ video {
 #quality-menu button[aria-checked="true"]::after {
   content: " ✓";
   color: #bf94ff;
+}
+
+#speed-menu {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  padding: 0 6px 6px;
+}
+
+#bar #speed-menu button {
+  width: auto;
+  height: 28px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+#bar #speed-menu button[aria-checked="true"] {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* Frame preview above the hovered point of the seek bar (seek-preview.js) */
+#seek-preview {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  width: 192px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  text-align: center;
+}
+
+#seek-preview canvas {
+  width: 192px;
+  height: 108px;
+  border: 2px solid #efeff1;
+  border-radius: 4px;
+  background: #000;
+  object-fit: cover;
+}
+
+#seek-preview span {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: rgb(0 0 0 / 0.75);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Clip editor: a modal over the player window */
