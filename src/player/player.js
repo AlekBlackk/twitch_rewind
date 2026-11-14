@@ -405,8 +405,9 @@ document.addEventListener("keydown", (event) => {
 }, true);
 
 playButton.addEventListener("click", togglePlay);
+// No dblclick-to-fullscreen: every second click of a quick series fires one and would flip the
+// fullscreen while the user is just toggling the pause (the button and the F key stay).
 video.addEventListener("click", togglePlay);
-video.addEventListener("dblclick", toggleFullscreen);
 muteButton.addEventListener("click", toggleMute);
 fullscreenButton.addEventListener("click", toggleFullscreen);
 document.addEventListener("fullscreenchange", () => {
